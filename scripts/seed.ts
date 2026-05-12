@@ -70,11 +70,11 @@ const seedData = async () => {
     // 2. Seed Users and create Auth users
     console.log("Seeding users and creating auth accounts...");
     const users = [
-        { uid: 'user-admin-01', email: 'rishi.404@outlook.com', password: 'password123', name: 'Rishi', role: 'admin', avatarUrl: 'https://placehold.co/36x36.png' },
-        { uid: 'user-ca-01', email: 'tony@stark.com', password: 'password123', name: 'Tony Stark', role: 'company_admin', companyId: '1', avatarUrl: 'https://placehold.co/36x36.png' },
-        { uid: 'user-emp-01', email: 'pepper@stark.com', password: 'password123', name: 'Pepper Potts', role: 'employee', companyId: '1', avatarUrl: 'https://placehold.co/36x36.png' },
-        { uid: 'user-ca-02', email: 'bruce@wayne.com', password: 'password123', name: 'Bruce Wayne', role: 'company_admin', companyId: '2', avatarUrl: 'https://placehold.co/36x36.png' },
-        { uid: 'user-emp-02', email: 'lucius@wayne.com', password: 'password123', name: 'Lucius Fox', role: 'employee', companyId: '2', avatarUrl: 'https://placehold.co/36x36.png' },
+        { uid: 'user-admin-01', email: 'rishi.404@outlook.com', password: 'password123', name: 'Rishi', role: 'admin', avatarUrl: '/logo.png' },
+        { uid: 'user-ca-01', email: 'tony@stark.com', password: 'password123', name: 'Tony Stark', role: 'company_admin', companyId: '1', avatarUrl: '/logo.png' },
+        { uid: 'user-emp-01', email: 'pepper@stark.com', password: 'password123', name: 'Pepper Potts', role: 'employee', companyId: '1', avatarUrl: '/logo.png' },
+        { uid: 'user-ca-02', email: 'bruce@wayne.com', password: 'password123', name: 'Bruce Wayne', role: 'company_admin', companyId: '2', avatarUrl: '/logo.png' },
+        { uid: 'user-emp-02', email: 'lucius@wayne.com', password: 'password123', name: 'Lucius Fox', role: 'employee', companyId: '2', avatarUrl: '/logo.png' },
     ];
     
     for (const userData of users) {

@@ -72,7 +72,7 @@ export default function NaturalLanguageQuery() {
       return { ...initialState, error: "Please enter a query." };
     }
     try {
-        const result = await processQuery({ query, dbSchema, user });
+        const result = await processQuery({ query, dbSchema, user: user || undefined });
         return { ...result, error: null };
     } catch (e) {
         return { ...initialState, error: "An error occurred. Please try again." }

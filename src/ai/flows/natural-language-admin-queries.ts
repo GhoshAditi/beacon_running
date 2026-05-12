@@ -9,6 +9,7 @@
 import {ai} from '@/ai/genkit';
 import { NaturalLanguageAdminQueriesInputSchema, NaturalLanguageAdminQueriesOutputSchema, type NaturalLanguageAdminQueriesInput, type NaturalLanguageAdminQueriesOutput } from '@/ai/types/natural-language-admin-queries-types';
 import { data, type User } from '@/lib/data';
+import { Query } from 'appwrite';
 import { serverDatabases, DATABASE_ID, BEACON_COLLECTION_ID, type BeaconData } from '@/lib/appwrite';
 
 
@@ -51,10 +52,7 @@ export async function processQuery(input: NaturalLanguageAdminQueriesInput & { u
       const appwriteLogs = await serverDatabases.listDocuments(
         DATABASE_ID,
         BEACON_COLLECTION_ID,
-        companyId ? [
-          // Appwrite Query.equal('companyId', companyId)
-          { attribute: 'companyId', operator: 'equal', value: companyId }
-        ] : []
+        companyId ? [Query.equal('companyId', companyId)] : []
       );
       if (appwriteLogs && appwriteLogs.documents) {
         results = results.concat(appwriteLogs.documents);

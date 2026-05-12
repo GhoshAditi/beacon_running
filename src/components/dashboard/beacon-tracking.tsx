@@ -1,22 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { BeaconService } from "@/lib/beacon-service";
 import { EmailService } from "@/lib/email-service";
-import { 
-    Eye, 
-    Globe, 
-    Smartphone, 
-    Monitor, 
+import {
+    Eye,
+    Globe,
+    Smartphone,
+    Monitor,
     Chrome,
     MapPin,
     Clock,
     TrendingUp,
     Users,
-    Mail
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
@@ -50,25 +49,24 @@ export default function BeaconTracking({ companyId, isAdmin = false }: BeaconTra
         fetchRevokedEmails();
     }, [companyId]);
 
-    useEffect(() => {
-        fetchBeaconData();
-    }, [companyId]);
-
-    const fetchBeaconData = async () => {
+    const fetchBeaconData = useCallback(async () => {
         try {
             setLoading(true);
-            
-            // Fetch recent logs
-            const logs = isAdmin 
+
+            if (!isAdmin && !companyId) {
+                setBeaconLogs([]);
+                setAnalytics(null);
+                setTopEmails([]);
+                return;
+            }
+
+            const logs = isAdmin
                 ? await BeaconService.getAllBeaconLogs(50)
-                : await BeaconService.getBeaconLogsByCompany(companyId!, 50);
-            
-            // Fetch analytics
+                : await BeaconService.getBeaconLogsByCompany(companyId as string, 50);
+
             const analyticsData = await BeaconService.getBeaconAnalytics(isAdmin ? undefined : companyId);
-            
-            // Fetch top opened emails
             const topEmailsData = await BeaconService.getTopOpenedEmails(isAdmin ? undefined : companyId, 5);
-            
+
             setBeaconLogs(logs);
             setAnalytics(analyticsData);
             setTopEmails(topEmailsData);
@@ -77,10 +75,14 @@ export default function BeaconTracking({ companyId, isAdmin = false }: BeaconTra
         } finally {
             setLoading(false);
         }
-    };
+    }, [companyId, isAdmin]);
+
+    useEffect(() => {
+        void fetchBeaconData();
+    }, [fetchBeaconData]);
 
     const getBrowserIcon = (browser: string) => {
-        switch (browser.toLowerCase()) {
+        switch ((browser || '').toLowerCase()) {
             case 'chrome':
                 return <Chrome className="h-4 w-4" />;
             case 'firefox':
@@ -95,7 +97,7 @@ export default function BeaconTracking({ companyId, isAdmin = false }: BeaconTra
     };
 
     const getDeviceIcon = (device: string) => {
-        switch (device.toLowerCase()) {
+        switch ((device || '').toLowerCase()) {
             case 'mobile':
             case 'tablet':
                 return <Smartphone className="h-4 w-4" />;
@@ -125,28 +127,32 @@ export default function BeaconTracking({ companyId, isAdmin = false }: BeaconTra
     }, [analytics]);
 
     // Find the most opened location from beaconLogs
-    const getTopLocationFromLogs = () => {
+    const getTopLocationFromLogs = (): Record<string, unknown> | null => {
         if (!beaconLogs.length) return null;
-        // Count occurrences of each location (by lat/lng string or city/country)
-        const locationCounts: Record<string, { count: number; loc: any }> = {};
-        beaconLogs.forEach(log => {
-            let loc: any = {};
+        type Bucket = { count: number; loc: Record<string, unknown> };
+        const locationCounts: Record<string, Bucket> = {};
+        for (const log of beaconLogs) {
+            let loc: Record<string, unknown> = {};
             try {
-                loc = typeof log.location === 'string' ? JSON.parse(log.location) : log.location || {};
-            } catch { loc = {}; }
+                loc =
+                    typeof log.location === 'string'
+                        ? (JSON.parse(log.location) as Record<string, unknown>)
+                        : ((log.location as Record<string, unknown>) || {});
+            } catch {
+                loc = {};
+            }
             const hasLatLng = typeof loc.latitude === 'number' && typeof loc.longitude === 'number';
             const key = hasLatLng
                 ? `${loc.latitude},${loc.longitude}`
-                : `${loc.city || 'Unknown'},${loc.country || 'Unknown'}`;
+                : `${String(loc.city ?? 'Unknown')},${String(loc.country ?? 'Unknown')}`;
             if (!locationCounts[key]) locationCounts[key] = { count: 0, loc };
             locationCounts[key].count++;
-        });
-        // Find the location with the highest count
-        let top: { count: number; loc: any } | null = null;
-        Object.values(locationCounts).forEach((val) => {
+        }
+        let top: Bucket | null = null;
+        for (const val of Object.values(locationCounts)) {
             if (!top || val.count > top.count) top = val;
-        });
-        return top ? top.loc : null;
+        }
+        return top?.loc ?? null;
     };
 
     const topLocation = getTopLocationFromLogs();
@@ -343,20 +349,28 @@ export default function BeaconTracking({ companyId, isAdmin = false }: BeaconTra
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">
-                          {topLocation && typeof topLocation.latitude === 'number' && typeof topLocation.longitude === 'number' ? (
+                          {topLocation &&
+                          typeof topLocation.latitude === 'number' &&
+                          typeof topLocation.longitude === 'number' ? (
                             <>
-                              <span>Lat: {topLocation.latitude.toFixed(4)}, Lng: {topLocation.longitude.toFixed(4)}</span>
+                              <span>
+                                Lat: {(topLocation.latitude as number).toFixed(4)}, Lng:{' '}
+                                {(topLocation.longitude as number).toFixed(4)}
+                              </span>
                               {topLocationAddress && (
                                 <div className="text-xs text-muted-foreground mt-1">{topLocationAddress}</div>
                               )}
-                              {topLocation.city || topLocation.country ? (
+                              {(topLocation.city ?? topLocation.country) ? (
                                 <div className="text-xs text-muted-foreground mt-1">
-                                  {topLocation.city ? `${topLocation.city}, ` : ''}{topLocation.country || ''}
+                                  {topLocation.city ? `${String(topLocation.city)}, ` : ''}
+                                  {String(topLocation.country ?? '')}
                                 </div>
                               ) : null}
                             </>
-                          ) : topLocation && (topLocation.city || topLocation.country) ? (
-                            <span>{topLocation.city || 'Unknown'}, {topLocation.country || 'Unknown'}</span>
+                          ) : topLocation && (topLocation.city ?? topLocation.country) ? (
+                            <span>
+                              {String(topLocation.city ?? 'Unknown')}, {String(topLocation.country ?? 'Unknown')}
+                            </span>
                           ) : (
                             Object.keys(analytics.locationStats)[0] || 'Unknown'
                           )}
@@ -383,12 +397,17 @@ export default function BeaconTracking({ companyId, isAdmin = false }: BeaconTra
                     <div className="space-y-4">
                         {topEmails.length > 0 ? (
                             topEmails.map((email, index) => (
-                                <div key={email.emailId} className="flex items-center justify-between">
+                                <div key={email.emailId ?? `top-${index}`} className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
                                         <Badge variant="outline">#{index + 1}</Badge>
                                         <div>
                                             <p className="font-medium">{email.recipientEmail}</p>
-                                            <p className="text-sm text-muted-foreground">Email ID: {email.emailId.slice(0, 8)}...</p>
+                                            <p className="text-sm text-muted-foreground">
+                                                Email ID:{' '}
+                                                {email.emailId
+                                                    ? `${String(email.emailId).slice(0, 8)}…`
+                                                    : '—'}
+                                            </p>
                                         </div>
                                     </div>
                                     <Badge className="bg-green-100 text-green-800">
@@ -418,14 +437,20 @@ export default function BeaconTracking({ companyId, isAdmin = false }: BeaconTra
                   <div className="space-y-4">
                     {beaconLogs.length > 0 ? (
                       beaconLogs.slice(0, 10).map((log, index) => {
-                        let loc: any = {};
+                        let loc: Record<string, unknown> = {};
                         try {
-                          loc = typeof log.location === 'string' ? JSON.parse(log.location) : log.location || {};
-                        } catch { loc = {}; }
+                          loc =
+                            typeof log.location === 'string'
+                              ? (JSON.parse(log.location) as Record<string, unknown>)
+                              : ((log.location as Record<string, unknown>) || {});
+                        } catch {
+                          loc = {};
+                        }
                         const hasLatLng = typeof loc.latitude === 'number' && typeof loc.longitude === 'number';
                         const latLngKey = hasLatLng ? `${loc.latitude},${loc.longitude}` : null;
+                        const logKey = (log as { $id?: string; id?: string }).$id ?? (log as { id?: string }).id ?? `log-${index}`;
                         return (
-                          <div key={log.$id} className="flex items-center justify-between border-b pb-4">
+                          <div key={logKey} className="flex items-center justify-between border-b pb-4">
                             <div className="flex items-center gap-3">
                               <div className="flex items-center gap-2">
                                 {getBrowserIcon(log.browser)}
@@ -450,7 +475,7 @@ export default function BeaconTracking({ companyId, isAdmin = false }: BeaconTra
                                     <Tooltip>
                                       <TooltipTrigger asChild>
                                         <span className="underline decoration-dotted cursor-help">
-                                          {loc.latitude.toFixed(4)}, {loc.longitude.toFixed(4)}
+                                          {(loc.latitude as number).toFixed(4)}, {(loc.longitude as number).toFixed(4)}
                                         </span>
                                       </TooltipTrigger>
                                       <TooltipContent>
@@ -459,7 +484,9 @@ export default function BeaconTracking({ companyId, isAdmin = false }: BeaconTra
                                     </Tooltip>
                                   </TooltipProvider>
                                 ) : (
-                                  <span>{loc.city || 'Unknown'}, {loc.country || 'Unknown'}</span>
+                                  <span>
+                                    {String(loc.city ?? 'Unknown')}, {String(loc.country ?? 'Unknown')}
+                                  </span>
                                 )}
                               </div>
                               <p className="text-xs text-muted-foreground">

@@ -4,22 +4,19 @@ import { useAuth } from "@/context/auth-context";
 import { redirect } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Mail, ExternalLink, Eye, AlertTriangle, Clock, CheckCircle, XCircle, Copy, MapPin, Monitor, Calendar, User as UserIcon, Building2, Paperclip } from "lucide-react";
+import { ArrowLeft, Mail, ExternalLink, Eye, AlertTriangle, Clock, CheckCircle, XCircle, Copy, MapPin, Calendar, User as UserIcon, Building2, Paperclip } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { data, type Email, type User, type Company, type BeaconLog, type AccessLog } from "@/lib/data";
-import { BeaconService } from "@/lib/beacon-service";
+import { data, type Email, type User, type AccessLog } from "@/lib/data";
 import AppHeader from "@/components/app-header";
 
 type EmailDetails = Email & {
   senderName?: string;
   companyName?: string;
-  beaconLogs: any[]; // Use BeaconService data instead
   accessLogs: AccessLog[];
 };
 
@@ -55,20 +52,15 @@ export default function EmailDetailPage() {
           return;
         }
 
-        // Fetch beacon logs from BeaconService
-        const beaconLogs = await BeaconService.getBeaconLogsByEmail(emailId);
-
-        const sender = usersData.find(u => u.id === emailData.senderId);
-        const company = companiesData.find(c => c.id === emailData.companyId);
         const relatedAccessLogs = accessLogsData.filter(log => log.emailId === emailId);
 
         // --- AGENTIC AI: Analyze for suspicious activity via API route ---
-        if (!emailData.revoked && (beaconLogs.length > 0 || relatedAccessLogs.length > 0)) {
+        if (!emailData.revoked && relatedAccessLogs.length > 0) {
           try {
             const res = await fetch('/api/analyze-email', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ beaconLogs, accessLogs: relatedAccessLogs })
+              body: JSON.stringify({ beaconLogs: [], accessLogs: relatedAccessLogs })
             });
             if (res.ok) {
               const { shouldRevoke } = await res.json();
@@ -88,11 +80,13 @@ export default function EmailDetailPage() {
         }
         // --- END AGENTIC AI ---
 
+        const sender = usersData.find(u => u.id === emailData.senderId);
+        const company = companiesData.find(c => c.id === emailData.companyId);
+
         setEmail({
           ...emailData,
           senderName: sender?.name || 'Unknown',
           companyName: company?.name || (emailData.companyId === 'ADMIN' ? 'Admin' : 'Unknown'),
-          beaconLogs: beaconLogs,
           accessLogs: relatedAccessLogs
         });
       } catch (error) {
@@ -111,7 +105,17 @@ export default function EmailDetailPage() {
   }, [user, emailId, toast]);
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex min-h-screen w-full flex-col bg-zinc-950 text-zinc-100 selection:bg-emerald-500/30">
+        <AppHeader />
+        <main className="flex-1 p-4 sm:p-6 relative overflow-hidden">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none"></div>
+          <div className="flex items-center justify-center py-32 relative z-10">
+            <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   // Allow both admin and company_admin
@@ -129,24 +133,24 @@ export default function EmailDetailPage() {
     
     if (expiresAt && now > expiresAt) return 'expired';
     if (email.accessLogs.some(log => log.status === 'Success')) return 'accessed';
-    if (email.beaconLogs.length > 0) return 'opened';
+    if (email.accessLogs.length > 0) return 'opened';
     return 'sent';
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'sent':
-        return <Badge variant="secondary"><Clock className="h-3 w-3 mr-1" />Sent</Badge>;
+        return <Badge className="bg-zinc-800 text-zinc-300 hover:bg-zinc-700 border-none shadow-none"><Clock className="h-3 w-3 mr-1" />Sent</Badge>;
       case 'opened':
-        return <Badge variant="default"><Eye className="h-3 w-3 mr-1" />Opened</Badge>;
+        return <Badge className="bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 border border-cyan-500/20"><Eye className="h-3 w-3 mr-1" />Opened</Badge>;
       case 'accessed':
-        return <Badge variant="default" className="bg-green-500"><CheckCircle className="h-3 w-3 mr-1" />Accessed</Badge>;
+        return <Badge className="bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20"><CheckCircle className="h-3 w-3 mr-1" />Accessed</Badge>;
       case 'expired':
-        return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Expired</Badge>;
+        return <Badge className="bg-orange-500/10 text-orange-400 hover:bg-orange-500/20 border border-orange-500/20"><XCircle className="h-3 w-3 mr-1" />Expired</Badge>;
       case 'revoked':
-        return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Revoked</Badge>;
+        return <Badge className="bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20"><XCircle className="h-3 w-3 mr-1" />Revoked</Badge>;
       default:
-        return <Badge variant="secondary">Unknown</Badge>;
+        return <Badge className="bg-zinc-800 text-zinc-300 border-none shadow-none">Unknown</Badge>;
     }
   };
 
@@ -208,13 +212,12 @@ export default function EmailDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen w-full flex-col bg-muted/40">
+      <div className="flex min-h-screen w-full flex-col bg-zinc-950 text-zinc-100 selection:bg-emerald-500/30">
         <AppHeader />
-        <main className="flex-1 p-4 sm:p-6">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
+        <main className="flex-1 p-4 sm:p-6 relative overflow-hidden">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none"></div>
+          <div className="flex items-center justify-center py-32 relative z-10">
+            <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
           </div>
         </main>
       </div>
@@ -223,62 +226,74 @@ export default function EmailDetailPage() {
 
   if (!email) {
     return (
-      <div className="flex min-h-screen w-full flex-col bg-muted/40">
+      <div className="flex min-h-screen w-full flex-col bg-zinc-950 text-zinc-100 selection:bg-emerald-500/30">
         <AppHeader />
-        <main className="flex-1 p-4 sm:p-6">
-          <div className="max-w-7xl mx-auto">
-            <Card>
-              <CardContent className="p-8 text-center">
-                <h2 className="text-xl font-semibold mb-2">Email Not Found</h2>
-                <p className="text-muted-foreground mb-4">The requested email could not be found.</p>
-                <Button asChild>
-                  <Link href="/admin/emails">Back to Emails</Link>
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+        <main className="flex-1 p-4 sm:p-6 flex items-center justify-center relative overflow-hidden">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none"></div>
+          
+          <Card className="w-full max-w-md bg-zinc-900/80 backdrop-blur-xl border-zinc-800 shadow-2xl relative z-10 overflow-hidden text-center">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-cyan-500"></div>
+            <CardContent className="p-8">
+              <div className="mx-auto mb-4 bg-zinc-950 border border-zinc-800 p-3 rounded-2xl w-fit shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                <AlertTriangle className="h-8 w-8 text-emerald-400" />
+              </div>
+              <h2 className="text-xl font-bold text-white mb-2">Email Not Found</h2>
+              <p className="text-zinc-400 mb-6">The requested email could not be found or has been deleted.</p>
+              <Button className="bg-emerald-500 text-zinc-950 hover:bg-emerald-400 font-semibold" asChild>
+                <Link href="/admin/emails">Back to Emails</Link>
+              </Button>
+            </CardContent>
+          </Card>
         </main>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-muted/40">
+    <div className="flex min-h-screen w-full flex-col bg-zinc-950 text-zinc-100 selection:bg-emerald-500/30">
       <AppHeader />
-      <main className="flex-1 p-4 sm:p-6">
-        <div className="max-w-7xl mx-auto">
+      <main className="flex-1 p-4 sm:p-6 relative overflow-hidden">
+        {/* Background glow effects */}
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none"></div>
+        <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-cyan-500/5 rounded-full blur-[120px] pointer-events-none"></div>
+
+        <div className="max-w-7xl mx-auto relative z-10">
           <div className="flex items-center gap-4 mb-6">
-            <Link href="/admin/emails" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+            <Link href="/admin/emails" className="flex items-center gap-2 text-sm text-zinc-400 hover:text-emerald-400 transition-colors">
               <ArrowLeft className="h-4 w-4" />
               <span>Back to All Emails</span>
             </Link>
-            {/* Direct link to this email */}
-            <Link href={`/admin/emails/${emailId}`} className="ml-4 text-xs underline text-accent hover:text-accent-foreground">
-              View this email ({emailId})
+            <div className="h-4 w-px bg-zinc-800"></div>
+            <Link href={`/admin/emails/${emailId}`} className="text-xs text-emerald-500 hover:text-emerald-400 transition-colors flex items-center gap-1">
+              View this email ({emailId}) <ExternalLink className="h-3 w-3" />
             </Link>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-3">
             {/* Email Details */}
             <div className="lg:col-span-2 space-y-6">
-              <Card className="shadow-lg">
-                <CardHeader>
+              <Card className="bg-zinc-900/80 backdrop-blur-xl border-zinc-800 shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-cyan-500"></div>
+                <CardHeader className="border-b border-zinc-800/50 pb-4">
                   <div className="flex items-start justify-between">
                     <div className="space-y-2">
-                      <CardTitle className="flex items-center gap-2">
-                        <Mail className="h-5 w-5" />
+                      <CardTitle className="flex items-center gap-2 text-xl text-white">
+                        <div className="p-2 rounded-lg bg-zinc-950 border border-zinc-800 shadow-[0_0_15px_rgba(16,185,129,0.15)]">
+                          <Mail className="h-5 w-5 text-emerald-400" />
+                        </div>
                         Email Details
                       </CardTitle>
                       <div className="flex items-center gap-2">
                         {getStatusBadge(getEmailStatus(email))}
                         {email.isGuest && (
-                          <Badge variant="outline">Guest</Badge>
+                          <Badge className="bg-zinc-800 text-zinc-300 border-none shadow-none">Guest</Badge>
                         )}
                       </div>
                     </div>
                     <div className="flex gap-2">
                       <Button 
-                        variant="outline" 
+                        variant="outline"
+                        className="border-zinc-700 bg-zinc-950/50 text-zinc-300 hover:bg-zinc-800 hover:text-white"
                         size="sm"
                         onClick={() => copySecureLink(email.secureLinkToken)}
                       >
@@ -286,7 +301,8 @@ export default function EmailDetailPage() {
                         Copy Link
                       </Button>
                       <Button 
-                        variant="outline" 
+                        variant="outline"
+                        className="border-zinc-700 bg-zinc-950/50 text-zinc-300 hover:bg-zinc-800 hover:text-white"
                         size="sm"
                         onClick={() => window.open(`/secure/${email.secureLinkToken}`, '_blank')}
                       >
@@ -295,7 +311,7 @@ export default function EmailDetailPage() {
                       </Button>
                       {!email.revoked && (
                         <Button 
-                          variant="destructive" 
+                          className="bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/30"
                           size="sm"
                           onClick={revokeEmail}
                         >
@@ -305,7 +321,7 @@ export default function EmailDetailPage() {
                       )}
                       {email.revoked && (
                         <Button 
-                          variant="default" 
+                          className="bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30"
                           size="sm"
                           onClick={unrevokeEmail}
                         >
@@ -316,55 +332,55 @@ export default function EmailDetailPage() {
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 pt-6">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <div className="text-sm font-medium text-muted-foreground">To</div>
-                      <div className="font-medium">{email.recipient}</div>
+                      <div className="text-sm font-medium text-zinc-400">To</div>
+                      <div className="font-medium text-zinc-200">{email.recipient}</div>
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-muted-foreground">From</div>
-                      <div className="font-medium">{email.senderName}</div>
+                      <div className="text-sm font-medium text-zinc-400">From</div>
+                      <div className="font-medium text-zinc-200">{email.senderName}</div>
                     </div>
                   </div>
                   
                   <div>
-                    <div className="text-sm font-medium text-muted-foreground">Subject</div>
-                    <div className="font-medium">{email.subject}</div>
+                    <div className="text-sm font-medium text-zinc-400">Subject</div>
+                    <div className="font-medium text-zinc-200">{email.subject}</div>
                   </div>
 
                   <div>
-                    <div className="text-sm font-medium text-muted-foreground">Body</div>
+                    <div className="text-sm font-medium text-zinc-400 mb-2">Body</div>
                     <div 
-                      className="mt-2 p-4 border rounded-lg bg-muted/50 max-h-64 overflow-y-auto"
+                      className="p-4 border border-zinc-800 rounded-lg bg-zinc-950/50 text-zinc-300 max-h-64 overflow-y-auto"
                       dangerouslySetInnerHTML={{ __html: email.body }}
                     />
                   </div>
 
                   {email.attachmentFilename && (
                     <div>
-                      <div className="text-sm font-medium text-muted-foreground">Attachment</div>
-                      <div className="flex items-center gap-2 mt-2 p-2 border rounded-lg bg-muted/50">
+                      <div className="text-sm font-medium text-zinc-400 mb-2">Attachment</div>
+                      <div className="flex items-center gap-2 p-3 border border-zinc-800 rounded-lg bg-zinc-950/50 text-emerald-400">
                         <Paperclip className="h-4 w-4" />
-                        <span>{email.attachmentFilename}</span>
+                        <span className="text-sm">{email.attachmentFilename}</span>
                       </div>
                     </div>
                   )}
 
-                  <Separator />
+                  <Separator className="bg-zinc-800 my-4" />
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <div className="text-sm font-medium text-muted-foreground">Sent At</div>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
+                      <div className="text-sm font-medium text-zinc-400 mb-1">Sent At</div>
+                      <div className="flex items-center gap-2 text-zinc-300">
+                        <Calendar className="h-4 w-4 text-emerald-500" />
                         {formatDate(email.createdAt)}
                       </div>
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-muted-foreground">Expires At</div>
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4" />
+                      <div className="text-sm font-medium text-zinc-400 mb-1">Expires At</div>
+                      <div className="flex items-center gap-2 text-zinc-300">
+                        <Clock className="h-4 w-4 text-orange-500" />
                         {email.expiresAt 
                           ? formatDate(email.expiresAt)
                           : email.isGuest 
@@ -375,17 +391,17 @@ export default function EmailDetailPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-4 mt-2">
                     <div>
-                      <div className="text-sm font-medium text-muted-foreground">Company</div>
-                      <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4" />
+                      <div className="text-sm font-medium text-zinc-400 mb-1">Company</div>
+                      <div className="flex items-center gap-2 text-zinc-300">
+                        <Building2 className="h-4 w-4 text-cyan-500" />
                         {email.companyName}
                       </div>
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-muted-foreground">Secure Token</div>
-                      <div className="font-mono text-xs bg-muted p-2 rounded">
+                      <div className="text-sm font-medium text-zinc-400 mb-1">Secure Token</div>
+                      <div className="font-mono text-xs bg-zinc-950 border border-zinc-800 text-zinc-400 p-2 rounded">
                         {email.secureLinkToken}
                       </div>
                     </div>
@@ -393,268 +409,62 @@ export default function EmailDetailPage() {
                 </CardContent>
               </Card>
 
-              {/* Beacon Logs */}
-              <Card className="shadow-lg">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Eye className="h-5 w-5" />
-                    Beacon Triggers ({email.beaconLogs.length})
-                    {(() => {
-                      const suspiciousCount = email.beaconLogs.filter((log, index) => {
-                        if (index === 0) return false; // First log is never suspicious
-                        const firstLog = email.beaconLogs[email.beaconLogs.length - 1]; // Oldest first
-                        return log.ip !== firstLog?.ip || log.device !== firstLog?.device || log.userAgent !== firstLog?.userAgent;
-                      }).length;
-                      return suspiciousCount > 0 && (
-                        <Badge variant="destructive" className="ml-2">
-                          <AlertTriangle className="h-3 w-3 mr-1" />
-                          {suspiciousCount} Suspicious
-                        </Badge>
-                      );
-                    })()}
-                  </CardTitle>
-                  <CardDescription>
-                    Email open tracking and suspicious activity detection
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {(() => {
-                    const suspiciousLogs = email.beaconLogs.filter((log, index) => {
-                      if (index === 0) return false;
-                      const firstLog = email.beaconLogs[email.beaconLogs.length - 1];
-                      return log.ip !== firstLog?.ip || log.device !== firstLog?.device || log.userAgent !== firstLog?.userAgent;
-                    });
-                    
-                    return suspiciousLogs.length > 0 && (
-                      <Card className="mb-4 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/20">
-                        <CardHeader className="pb-3">
-                          <CardTitle className="text-red-800 dark:text-red-200 flex items-center gap-2">
-                            <AlertTriangle className="h-5 w-5" />
-                            Suspicious Activity Detected
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="pt-0">
-                          <div className="text-sm text-red-700 dark:text-red-300 space-y-2">
-                            <p>This email has been opened from multiple devices/locations, which may indicate unauthorized access:</p>
-                            <ul className="list-disc list-inside space-y-1">
-                              {(() => {
-                                const firstLog = email.beaconLogs[email.beaconLogs.length - 1];
-                                const issues = [];
-                                
-                                const uniqueIPs = new Set(email.beaconLogs.map(log => log.ip));
-                                if (uniqueIPs.size > 1) {
-                                  issues.push(`${uniqueIPs.size} different IP addresses`);
-                                }
-                                
-                                const uniqueDevices = new Set(email.beaconLogs.map(log => log.device));
-                                if (uniqueDevices.size > 1) {
-                                  issues.push(`${uniqueDevices.size} different device types`);
-                                }
-                                
-                                const uniqueLocations = new Set(email.beaconLogs.map(log => {
-                                  try {
-                                    const location = typeof log.location === 'string' ? JSON.parse(log.location) : log.location;
-                                    return `${location?.city || 'Unknown'}, ${location?.country || 'Unknown'}`;
-                                  } catch {
-                                    return 'Unknown';
-                                  }
-                                }));
-                                if (uniqueLocations.size > 1) {
-                                  issues.push(`${uniqueLocations.size} different locations`);
-                                }
-                                
-                                return issues.map((issue, idx) => (
-                                  <li key={idx}>{issue}</li>
-                                ));
-                              })()}
-                            </ul>
-                            {email.revoked && (
-                              <p className="font-medium">⚠️ This email link has been automatically revoked for security.</p>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })()}
-                  
-                  {email.beaconLogs.length > 0 ? (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Device</TableHead>
-                          <TableHead>Browser</TableHead>
-                          <TableHead>OS</TableHead>
-                          <TableHead>Timezone</TableHead>
-                          <TableHead>Screen</TableHead>
-                          <TableHead>Lat/Lng</TableHead>
-                          <TableHead>Accuracy</TableHead>
-                          <TableHead>IP</TableHead>
-                          <TableHead>Timestamp</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {email.beaconLogs.map((log, index) => {
-                          const firstLog = email.beaconLogs[email.beaconLogs.length - 1]; // Oldest first
-                          let suspiciousReasons: string[] = [];
-                          const isSuspicious = index > 0 && (
-                            (log.ip !== firstLog?.ip && suspiciousReasons.push(`IP changed: ${firstLog?.ip} → ${log.ip}`)) |
-                            (log.device !== firstLog?.device && suspiciousReasons.push(`Device changed: ${firstLog?.device} → ${log.device}`)) |
-                            (log.userAgent !== firstLog?.userAgent && suspiciousReasons.push('User agent changed'))
-                          );
-                          let location = {};
-                          try {
-                            location = typeof log.location === 'string' ? JSON.parse(log.location) : log.location || {};
-                          } catch {
-                            location = {};
-                          }
-                          return (
-                            <TableRow key={log.$id} className={isSuspicious ? "bg-red-50 dark:bg-red-950/20" : ""}>
-                              <TableCell>
-                                {isSuspicious ? (
-                                  <Badge variant="destructive" className="flex items-center gap-1 w-fit" title={suspiciousReasons.join('; ') || 'Suspicious activity detected'}>
-                                    <AlertTriangle className="h-3 w-3" />
-                                    Suspicious
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="default" className="flex items-center gap-1 w-fit" title="All parameters match the first open (IP, device, user agent)">
-                                    <CheckCircle className="h-3 w-3" />
-                                    Normal
-                                  </Badge>
-                                )}
-                              </TableCell>
-                              <TableCell>{log.device || 'N/A'}</TableCell>
-                              <TableCell>
-                                <span title={log.userAgent || ''} className="cursor-help underline decoration-dotted">
-                                  {log.browser || 'N/A'}
-                                </span>
-                              </TableCell>
-                              <TableCell>{log.os || 'N/A'}</TableCell>
-                              <TableCell>{log.timezone || location.timezone || 'N/A'}</TableCell>
-                              <TableCell>{log.screenResolution || 'N/A'}</TableCell>
-                              <TableCell>
-                                {typeof location.latitude === 'number' && typeof location.longitude === 'number'
-                                  ? `${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}`
-                                  : 'N/A'}
-                              </TableCell>
-                              <TableCell>
-                                {typeof location.accuracy === 'number' ? `${location.accuracy}m` : 'N/A'}
-                              </TableCell>
-                              <TableCell>
-                                <div className="font-mono text-sm">{log.ip}</div>
-                              </TableCell>
-                              <TableCell>{formatDateShort(log.timestamp)}</TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  ) : (
-                    <div className="text-center py-8">
-                      <Eye className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold mb-2">No opens detected</h3>
-                      <p className="text-muted-foreground">
-                        This email has not been opened yet
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
             </div>
 
             {/* Access Logs Sidebar */}
             <div className="space-y-6">
-              <Card className="shadow-lg">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <ExternalLink className="h-5 w-5" />
+              <Card className="bg-zinc-900/80 backdrop-blur-xl border-zinc-800 shadow-2xl relative overflow-hidden">
+                <CardHeader className="border-b border-zinc-800/50 pb-4">
+                  <CardTitle className="flex items-center gap-2 text-white">
+                    <div className="p-2 rounded-lg bg-zinc-950 border border-zinc-800">
+                      <ExternalLink className="h-5 w-5 text-indigo-400" />
+                    </div>
                     Access Attempts ({email.accessLogs.length})
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-zinc-400">
                     Secure link access history
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                   {email.accessLogs.length > 0 ? (
                     <div className="space-y-4">
                       {email.accessLogs.map((log) => {
-                        // Find the closest beacon log by timestamp and emailId
-                        let matchedBeacon = null;
-                        if (email.beaconLogs && email.beaconLogs.length > 0) {
-                          const logTime = new Date(typeof log.timestamp === 'string' ? log.timestamp : log.timestamp.toDate());
-                          matchedBeacon = email.beaconLogs
-                            .filter(b => b.emailId === log.emailId)
-                            .map(b => ({
-                              ...b,
-                              beaconTime: new Date(typeof b.timestamp === 'string' ? b.timestamp : b.timestamp.toDate())
-                            }))
-                            .sort((a, b) => Math.abs(a.beaconTime - logTime) - Math.abs(b.beaconTime - logTime))[0];
-                        }
-                        let location = {};
-                        try {
-                          location = matchedBeacon && matchedBeacon.location ?
-                            (typeof matchedBeacon.location === 'string' ? JSON.parse(matchedBeacon.location) : matchedBeacon.location) : {};
-                        } catch {
-                          location = {};
-                        }
                         return (
-                          <div key={log.id} className="border-b pb-4 last:border-b-0">
-                            <div className="flex items-start justify-between mb-2">
+                          <div key={log.id} className="border border-zinc-800 bg-zinc-950/50 rounded-lg p-4 transition-colors hover:border-zinc-700">
+                            <div className="flex items-start justify-between mb-3">
                               <Badge 
-                                variant={log.status === 'Success' ? 'default' : 'destructive'}
-                                className="flex items-center gap-1"
+                                className={log.status === 'Success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/10 text-red-400 border border-red-500/30'}
                               >
                                 {log.status === 'Success' ? (
-                                  <CheckCircle className="h-3 w-3" />
+                                  <CheckCircle className="h-3 w-3 mr-1" />
                                 ) : (
-                                  <XCircle className="h-3 w-3" />
+                                  <XCircle className="h-3 w-3 mr-1" />
                                 )}
                                 {log.status}
                               </Badge>
-                              <span className="text-xs text-muted-foreground">
+                              <span className="text-xs text-zinc-500">
                                 {formatDateShort(log.timestamp)}
                               </span>
                             </div>
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2 text-sm">
-                                <UserIcon className="h-3 w-3 text-muted-foreground" />
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2 text-sm text-zinc-300">
+                                <UserIcon className="h-4 w-4 text-zinc-500" />
                                 {log.user}
                               </div>
-                              <div className="flex items-center gap-2 text-sm">
-                                <Mail className="h-3 w-3 text-muted-foreground" />
+                              <div className="flex items-center gap-2 text-sm text-zinc-300">
+                                <Mail className="h-4 w-4 text-zinc-500" />
                                 {log.email}
                               </div>
-                              <div className="flex items-center gap-2 text-sm">
-                                <MapPin className="h-3 w-3 text-muted-foreground" />
-                                {log.ip}
+                              <div className="flex items-center gap-2 text-sm text-zinc-300">
+                                <MapPin className="h-4 w-4 text-zinc-500" />
+                                <span className="font-mono text-xs">{log.ip}</span>
                               </div>
-                              <div className="flex items-center gap-2 text-sm">
-                                <Monitor className="h-3 w-3 text-muted-foreground" />
-                                {matchedBeacon?.os || log.os || 'N/A'}
-                              </div>
-                              <div className="flex items-center gap-2 text-sm">
-                                <span className="font-semibold">Browser:</span>
-                                <span title={matchedBeacon?.userAgent || ''} className="cursor-help underline decoration-dotted">{matchedBeacon?.browser || 'N/A'}</span>
-                              </div>
-                              <div className="flex items-center gap-2 text-sm">
-                                <span className="font-semibold">OS:</span>
-                                <span>{matchedBeacon?.os || 'N/A'}</span>
-                              </div>
-                              <div className="flex items-center gap-2 text-sm">
-                                <span className="font-semibold">Timezone:</span>
-                                <span>{matchedBeacon?.timezone || location.timezone || 'N/A'}</span>
-                              </div>
-                              <div className="flex items-center gap-2 text-sm">
-                                <span className="font-semibold">Screen:</span>
-                                <span>{matchedBeacon?.screenResolution || 'N/A'}</span>
-                              </div>
-                              <div className="flex items-center gap-2 text-sm">
-                                <span className="font-semibold">Lat/Lng:</span>
-                                <span>{typeof location.latitude === 'number' && typeof location.longitude === 'number' ? `${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}` : 'N/A'}</span>
-                              </div>
-                              <div className="flex items-center gap-2 text-sm">
-                                <span className="font-semibold">Accuracy:</span>
-                                <span>{typeof location.accuracy === 'number' ? `${location.accuracy}m` : 'N/A'}</span>
+                              <Separator className="bg-zinc-800/50 my-2" />
+                              <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div className="flex flex-col gap-1 text-zinc-400">
+                                  <span>Device</span>
+                                  <span className="text-zinc-300 truncate">{log.device || 'N/A'}</span>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -662,10 +472,12 @@ export default function EmailDetailPage() {
                       })}
                     </div>
                   ) : (
-                    <div className="text-center py-8">
-                      <ExternalLink className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold mb-2">No access attempts</h3>
-                      <p className="text-muted-foreground text-sm">
+                    <div className="text-center py-8 border border-dashed border-zinc-800 rounded-lg bg-zinc-950/30">
+                      <div className="mx-auto mb-3 bg-zinc-900 border border-zinc-800 p-2 rounded-full w-fit">
+                        <ExternalLink className="h-5 w-5 text-zinc-500" />
+                      </div>
+                      <h3 className="text-sm font-medium text-zinc-300 mb-1">No access attempts</h3>
+                      <p className="text-xs text-zinc-500">
                         No one has attempted to access this secure link yet
                       </p>
                     </div>
@@ -674,74 +486,59 @@ export default function EmailDetailPage() {
               </Card>
 
               {/* Quick Stats */}
-              <Card className="shadow-lg">
-                <CardHeader>
-                  <CardTitle>Quick Stats</CardTitle>
+              <Card className="bg-zinc-900/80 backdrop-blur-xl border-zinc-800 shadow-xl overflow-hidden">
+                <CardHeader className="bg-zinc-950/50 border-b border-zinc-800 py-4">
+                  <CardTitle className="text-base text-white">Quick Stats</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Total Opens</span>
-                    <span className="font-medium">{email.beaconLogs.length}</span>
+                <CardContent className="space-y-3 pt-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-zinc-400">Access attempts</span>
+                    <Badge className="bg-zinc-800 text-zinc-200 border-none">{email.accessLogs.length}</Badge>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Successful Access</span>
-                    <span className="font-medium">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-zinc-400">Successful access</span>
+                    <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                       {email.accessLogs.filter(log => log.status === 'Success').length}
-                    </span>
+                    </Badge>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Failed Access</span>
-                    <span className="font-medium">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-zinc-400">Failed access</span>
+                    <Badge className="bg-red-500/10 text-red-400 border border-red-500/20">
                       {email.accessLogs.filter(log => log.status === 'Failed').length}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-zinc-400">Unique IPs</span>
+                    <span className="text-sm font-medium text-zinc-200">
+                      {new Set(email.accessLogs.map(log => log.ip)).size}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Unique Devices</span>
-                    <span className="font-medium">
-                      {new Set(email.beaconLogs.map(log => `${log.device}-${log.ip}`)).size}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Unique Locations</span>
-                    <span className="font-medium">
-                      {new Set(email.beaconLogs.map(log => {
-                        try {
-                          const location = typeof log.location === 'string' 
-                            ? JSON.parse(log.location) 
-                            : log.location;
-                          return `${location?.city || 'Unknown'}, ${location?.country || 'Unknown'}`;
-                        } catch {
-                          return 'Unknown';
-                        }
-                      })).size}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Suspicious Opens</span>
-                    <span className="font-medium">
-                      {email.beaconLogs.filter(log => {
-                        // Check if this open has different IP/device from first open
-                        const firstLog = email.beaconLogs[email.beaconLogs.length - 1]; // Oldest first
-                        return log.ip !== firstLog?.ip || log.device !== firstLog?.device;
-                      }).length}
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-zinc-400">Unique devices</span>
+                    <span className="text-sm font-medium text-zinc-200">
+                      {new Set(email.accessLogs.map(log => `${log.device}-${log.ip}`)).size}
                     </span>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Email Links */}
-              <Card className="shadow-lg">
-                <CardHeader>
-                  <CardTitle>Email Links</CardTitle>
+              <Card className="bg-zinc-900/80 backdrop-blur-xl border-zinc-800 shadow-xl overflow-hidden">
+                <CardHeader className="bg-zinc-950/50 border-b border-zinc-800 py-4">
+                  <CardTitle className="text-base text-white">Direct Links</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2">
-                  <div>
-                    <span className="text-sm text-muted-foreground">Admin View:</span>
-                    <Link href={`/admin/emails/${emailId}`} className="block text-accent underline break-all">/admin/emails/{emailId}</Link>
+                <CardContent className="space-y-4 pt-4">
+                  <div className="space-y-1">
+                    <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Admin View</span>
+                    <Link href={`/admin/emails/${emailId}`} className="block text-sm text-emerald-400 hover:text-emerald-300 transition-colors break-all bg-zinc-950/50 p-2 rounded border border-zinc-800/50">
+                      /admin/emails/{emailId}
+                    </Link>
                   </div>
-                  <div>
-                    <span className="text-sm text-muted-foreground">Secure Link:</span>
-                    <Link href={`/secure/${email?.secureLinkToken}`} className="block text-accent underline break-all">/secure/{email?.secureLinkToken}</Link>
+                  <div className="space-y-1">
+                    <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Secure Portal Link</span>
+                    <Link href={`/secure/${email?.secureLinkToken}`} className="block text-sm text-cyan-400 hover:text-cyan-300 transition-colors break-all bg-zinc-950/50 p-2 rounded border border-zinc-800/50">
+                      /secure/{email?.secureLinkToken}
+                    </Link>
                   </div>
                 </CardContent>
               </Card>

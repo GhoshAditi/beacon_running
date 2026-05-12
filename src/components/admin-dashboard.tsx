@@ -1,30 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  BarChart3,
-  Building,
-  Users,
-  Settings,
-  PlusCircle,
-  Mail,
-  Key,
-  Trash2,
-} from "lucide-react";
-import Link from "next/link";
+import NextLink from "next/link";
 import { Button } from "@/components/ui/button";
-import GuardianMailLogo from "./icons/logo";
-import NaturalLanguageQuery from "./dashboard/natural-language-query";
-import SummarizedReport from "./dashboard/summarized-report";
-import ActivityLogs from "./dashboard/activity-logs";
-import RealTimeAlerts from "./dashboard/real-time-alerts";
-import BeaconTracking from "./dashboard/beacon-tracking";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "./ui/card";
 import { data, type Company, type User, type Email } from "@/lib/data";
 import AppHeader from "./app-header";
+import AdminSidebar from "./admin-sidebar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { Trash2, Building2, Users as UsersIcon, Mail as MailIcon, Activity, AlertTriangle, ShieldAlert, MonitorSmartphone } from "lucide-react";
 
 export default function AdminDashboard() {
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -45,7 +30,6 @@ export default function AdminDashboard() {
     fetchData();
   }, [])
 
-  // Prepare data for charts
   const emailsPerDay = (() => {
     const map: Record<string, number> = {};
     emails.forEach(e => {
@@ -65,302 +49,241 @@ export default function AdminDashboard() {
     return Object.entries(map).map(([role, value]) => ({ name: role, value }));
   })();
 
-  const pieColors = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#8dd1e1'];
+  const pieColors = ['#10B981', '#06B6D4', '#6366F1', '#8B5CF6', '#F59E0B'];
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-muted/40">
-      <aside className="fixed inset-y-0 left-0 z-10 hidden w-20 flex-col border-r bg-background sm:flex shadow-lg">
-        <nav className="flex flex-col items-center gap-6 px-2 sm:py-8">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link
-                  href="#"
-                  className="group flex h-12 w-12 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:h-10 md:w-10 md:text-base shadow-md"
-                >
-                  <GuardianMailLogo className="h-6 w-6 transition-all group-hover:scale-110" />
-                  <span className="sr-only">GuardianMail</span>
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">Home</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link href="/admin" className="flex h-12 w-12 items-center justify-center rounded-lg bg-accent text-accent-foreground transition-colors hover:text-foreground md:h-10 md:w-10 shadow">
-                  <BarChart3 className="h-6 w-6" />
-                  <span className="sr-only">Dashboard</span>
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">Dashboard</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link
-                  href="/admin/companies"
-                  className="flex h-12 w-12 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-10 md:w-10 shadow"
-                >
-                  <Building className="h-6 w-6" />
-                  <span className="sr-only">Companies</span>
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">Companies</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link
-                  href="/admin/users"
-                  className="flex h-12 w-12 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-10 md:w-10 shadow"
-                >
-                  <Users className="h-6 w-6" />
-                  <span className="sr-only">All Users</span>
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">All Users</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link
-                  href="/admin/emails"
-                  className="flex h-12 w-12 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-10 md:w-10 shadow"
-                >
-                  <Mail className="h-6 w-6" />
-                  <span className="sr-only">All Emails</span>
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">All Emails</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link
-                  href="/admin/pin-requests"
-                  className="flex h-12 w-12 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-10 md:w-10 shadow"
-                >
-                  <Key className="h-6 w-6" />
-                  <span className="sr-only">PIN Requests</span>
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">PIN Requests</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </nav>
-        <div className="flex-1" />
-        <nav className="mb-6 flex flex-col items-center gap-6 px-2">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link
-                  href="/settings"
-                  className="flex h-12 w-12 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-10 md:w-10 shadow"
-                >
-                  <Settings className="h-6 w-6" />
-                  <span className="sr-only">Settings</span>
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">Settings</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </nav>
-      </aside>
+    <div className="flex min-h-screen w-full flex-col bg-[#09090b] text-zinc-100 selection:bg-emerald-500/30">
+      <AdminSidebar />
       <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-20">
         <AppHeader />
-        <main className="flex-1 p-2 sm:px-4 sm:py-0 md:gap-8">
+        <main className="flex-1 p-4 sm:px-8 sm:py-4 md:gap-8 max-w-[1600px] mx-auto w-full">
           <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="mb-4 flex flex-wrap gap-2">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="beacon">Beacon</TabsTrigger>
-              <TabsTrigger value="alerts">Alerts</TabsTrigger>
-              {/* <TabsTrigger value="activity">Activity</TabsTrigger> */}
+            <TabsList className="mb-6 flex flex-wrap gap-2 bg-zinc-900/80 backdrop-blur-md border border-zinc-800/80 rounded-xl p-1 shadow-lg w-fit">
+              <TabsTrigger value="overview" className="data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400 data-[state=active]:shadow-[0_0_15px_rgba(16,185,129,0.2)] text-zinc-400 rounded-lg transition-all px-6">Overview</TabsTrigger>
+              <TabsTrigger value="alerts" className="data-[state=active]:bg-red-500/20 data-[state=active]:text-red-400 data-[state=active]:shadow-[0_0_15px_rgba(239,68,68,0.2)] text-zinc-400 rounded-lg transition-all px-6">Security Alerts</TabsTrigger>
             </TabsList>
-            <TabsContent value="overview">
-              <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
-                {/* Stat cards */}
-                <Card className="shadow-lg hover:shadow-xl transition-shadow">
-                  <CardHeader className="pb-2">
-                    <CardDescription>Total Companies</CardDescription>
-                    <CardTitle className="text-4xl">{companies.length}</CardTitle>
+            
+            <TabsContent value="overview" className="mt-0 focus-visible:outline-none focus-visible:ring-0 space-y-6">
+              {/* Dynamic Grid Layout for Top Metrics */}
+              <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+                <Card className="relative overflow-hidden bg-gradient-to-br from-zinc-900 to-zinc-950 border-zinc-800 hover:border-emerald-500/30 transition-all duration-300 group shadow-lg">
+                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <Building2 className="w-16 h-16 text-emerald-500" />
+                  </div>
+                  <CardHeader className="pb-2 z-10 relative">
+                    <CardDescription className="text-zinc-400 font-medium">Total Companies</CardDescription>
+                    <CardTitle className="text-4xl text-white font-bold drop-shadow-sm">{companies.length}</CardTitle>
                   </CardHeader>
+                  <CardContent className="z-10 relative pt-2">
+                    <p className="text-xs text-emerald-400 flex items-center gap-1 font-medium"><Activity className="w-3 h-3" /> System wide</p>
+                  </CardContent>
+                  <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-emerald-500/0 via-emerald-500/50 to-emerald-500/0 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 </Card>
-                <Card className="shadow-lg hover:shadow-xl transition-shadow">
-                  <CardHeader className="pb-2">
-                    <CardDescription>Total Users</CardDescription>
-                    <CardTitle className="text-4xl">{users.length}</CardTitle>
+
+                <Card className="relative overflow-hidden bg-gradient-to-br from-zinc-900 to-zinc-950 border-zinc-800 hover:border-cyan-500/30 transition-all duration-300 group shadow-lg">
+                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <UsersIcon className="w-16 h-16 text-cyan-500" />
+                  </div>
+                  <CardHeader className="pb-2 z-10 relative">
+                    <CardDescription className="text-zinc-400 font-medium">Total Users</CardDescription>
+                    <CardTitle className="text-4xl text-white font-bold drop-shadow-sm">{users.length}</CardTitle>
                   </CardHeader>
+                  <CardContent className="z-10 relative pt-2">
+                    <p className="text-xs text-cyan-400 flex items-center gap-1 font-medium"><Activity className="w-3 h-3" /> Across all roles</p>
+                  </CardContent>
+                  <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-cyan-500/0 via-cyan-500/50 to-cyan-500/0 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 </Card>
-                <Card className="shadow-lg hover:shadow-xl transition-shadow">
-                  <CardHeader className="pb-2">
-                    <CardDescription>Emails Sent</CardDescription>
-                    <CardTitle className="text-4xl">{emails.length}</CardTitle>
+
+                <Card className="relative overflow-hidden bg-gradient-to-br from-zinc-900 to-zinc-950 border-zinc-800 hover:border-indigo-500/30 transition-all duration-300 group shadow-lg">
+                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <MailIcon className="w-16 h-16 text-indigo-500" />
+                  </div>
+                  <CardHeader className="pb-2 z-10 relative">
+                    <CardDescription className="text-zinc-400 font-medium">Emails Sent</CardDescription>
+                    <CardTitle className="text-4xl text-white font-bold drop-shadow-sm">{emails.length}</CardTitle>
                   </CardHeader>
+                  <CardContent className="z-10 relative pt-2">
+                    <p className="text-xs text-indigo-400 flex items-center gap-1 font-medium"><Activity className="w-3 h-3" /> Secured links</p>
+                  </CardContent>
+                  <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-indigo-500/0 via-indigo-500/50 to-indigo-500/0 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 </Card>
-                <Card className="shadow-lg hover:shadow-xl transition-shadow">
-                  <CardHeader className="pb-2">
-                    <CardDescription>Recent Activity</CardDescription>
-                    <CardTitle className="text-4xl">{emails.filter(e => {
+
+                <Card className="relative overflow-hidden bg-gradient-to-br from-zinc-900 to-zinc-950 border-zinc-800 hover:border-violet-500/30 transition-all duration-300 group shadow-lg">
+                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <Activity className="w-16 h-16 text-violet-500" />
+                  </div>
+                  <CardHeader className="pb-2 z-10 relative">
+                    <CardDescription className="text-zinc-400 font-medium">Recent Activity</CardDescription>
+                    <CardTitle className="text-4xl text-white font-bold drop-shadow-sm">{emails.filter(e => {
                       const createdAt = typeof e.createdAt === 'string' ? new Date(e.createdAt) : e.createdAt.toDate();
                       const yesterday = new Date();
                       yesterday.setDate(yesterday.getDate() - 1);
                       return createdAt > yesterday;
                     }).length}</CardTitle>
                   </CardHeader>
+                  <CardContent className="z-10 relative pt-2">
+                    <p className="text-xs text-violet-400 flex items-center gap-1 font-medium"><Activity className="w-3 h-3" /> Past 24 hours</p>
+                  </CardContent>
+                  <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-violet-500/0 via-violet-500/50 to-violet-500/0 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 </Card>
               </div>
-              {/* Charts row */}
-              <div className="grid gap-6 mt-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-2">
-                <Card className="shadow-lg hover:shadow-xl transition-shadow">
+
+              {/* Charts Section */}
+              <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+                <Card className="bg-zinc-900/80 border-zinc-800 shadow-xl backdrop-blur-xl">
                   <CardHeader>
-                    <CardTitle>Emails Sent Per Day</CardTitle>
+                    <CardTitle className="text-white text-lg font-semibold flex items-center gap-2">
+                      <MailIcon className="w-5 h-5 text-emerald-400" />
+                      Email Volume Trends
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent style={{ height: 250 }}>
+                  <CardContent style={{ height: 300 }}>
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={emailsPerDay}>
-                        <XAxis dataKey="date" fontSize={12} />
-                        <YAxis allowDecimals={false} fontSize={12} />
-                        <RechartsTooltip />
-                        <Bar dataKey="count" fill="#8884d8" radius={[4, 4, 0, 0]} />
+                        <XAxis dataKey="date" fontSize={12} stroke="#71717A" tickLine={false} axisLine={false} />
+                        <YAxis allowDecimals={false} fontSize={12} stroke="#71717A" tickLine={false} axisLine={false} />
+                        <RechartsTooltip 
+                          contentStyle={{ backgroundColor: '#18181B', borderColor: '#27272A', color: '#FFF', borderRadius: '8px', boxShadow: '0 4px 15px rgba(0,0,0,0.5)' }} 
+                          itemStyle={{ color: '#FFF', fontWeight: 500 }}
+                          labelStyle={{ color: '#A1A1AA', marginBottom: '4px' }}
+                          cursor={{ fill: '#27272A', opacity: 0.4 }}
+                        />
+                        <Bar dataKey="count" fill="#10B981" radius={[6, 6, 0, 0]} maxBarSize={40} />
                       </BarChart>
                     </ResponsiveContainer>
                   </CardContent>
                 </Card>
-                <Card className="shadow-lg hover:shadow-xl transition-shadow">
+
+                <Card className="bg-zinc-900/80 border-zinc-800 shadow-xl backdrop-blur-xl">
                   <CardHeader>
-                    <CardTitle>User Roles Distribution</CardTitle>
+                    <CardTitle className="text-white text-lg font-semibold flex items-center gap-2">
+                      <UsersIcon className="w-5 h-5 text-cyan-400" />
+                      User Roles Distribution
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent style={{ height: 250 }}>
+                  <CardContent style={{ height: 300 }}>
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
-                        <Pie data={userRoles} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label>
+                        <Pie data={userRoles} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={2} stroke="none">
                           {userRoles.map((entry, idx) => (
                             <Cell key={`cell-${idx}`} fill={pieColors[idx % pieColors.length]} />
                           ))}
                         </Pie>
-                        <Legend />
-                        <RechartsTooltip />
+                        <Legend wrapperStyle={{ color: '#A1A1AA', fontSize: '12px', paddingTop: '10px' }} iconType="circle" />
+                        <RechartsTooltip 
+                          contentStyle={{ backgroundColor: '#18181B', borderColor: '#27272A', color: '#FFF', borderRadius: '8px', boxShadow: '0 4px 15px rgba(0,0,0,0.5)' }} 
+                          itemStyle={{ color: '#FFF', fontWeight: 600 }}
+                          labelStyle={{ color: '#FFF' }}
+                        />
                       </PieChart>
                     </ResponsiveContainer>
                   </CardContent>
                 </Card>
               </div>
-              <div className="grid gap-6 mt-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-2">
-                {/* Companies summary */}
-                <Card className="shadow-lg hover:shadow-xl transition-shadow">
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle>Companies</CardTitle>
-                    <Button asChild size="sm">
-                      <Link href="/admin/companies">Manage</Link>
+
+              {/* Data Previews Section */}
+              <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+                <Card className="bg-zinc-900/80 border-zinc-800 shadow-xl backdrop-blur-xl flex flex-col">
+                  <CardHeader className="flex flex-row items-center justify-between border-b border-zinc-800/50 pb-4">
+                    <CardTitle className="text-white text-lg font-semibold flex items-center gap-2">
+                      <Building2 className="w-5 h-5 text-indigo-400" />
+                      Onboarded Companies
+                    </CardTitle>
+                    <Button asChild size="sm" className="bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 border border-indigo-500/30 transition-colors">
+                      <NextLink href="/admin/companies">Manage</NextLink>
                     </Button>
                   </CardHeader>
-                  <CardContent className="grid gap-4">
+                  <CardContent className="grid gap-3 pt-4 flex-1">
                     {companies.slice(0, 5).map(company => (
-                      <div key={company.id} className="flex items-center justify-between">
-                        <span className="text-muted-foreground">{company.name}</span>
+                      <div key={company.id} className="flex items-center justify-between p-3 rounded-lg bg-zinc-950/50 border border-zinc-800/50 hover:border-zinc-700 transition-colors">
+                        <span className="text-zinc-200 font-medium">{company.name}</span>
+                        <span className="text-xs text-zinc-500 font-mono">{company.id.substring(0, 8)}...</span>
                       </div>
                     ))}
                     {companies.length > 5 && (
-                      <p className="text-xs text-muted-foreground text-center">...and {companies.length - 5} more</p>
-                    )}
-                  </CardContent>
-                </Card>
-                {/* Users summary */}
-                <Card className="shadow-lg hover:shadow-xl transition-shadow">
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle>Users</CardTitle>
-                  </CardHeader>
-                  <CardContent className="grid gap-4">
-                    {users.slice(0, 5).map(user => (
-                      <div key={user.id} className="flex items-center justify-between">
-                        <span className="text-muted-foreground">{user.name || user.email}</span>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          title="Delete user"
-                          className="flex items-center gap-1"
-                          onClick={async () => {
-                            if (window.confirm(`Are you sure you want to delete user '${user.name || user.email}'?`)) {
-                              await data.users.delete(user.id);
-                              setUsers(users => users.filter(u => u.id !== user.id));
-                            }
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 mr-1" /> Delete
-                        </Button>
+                      <div className="mt-auto pt-2 text-center">
+                        <p className="text-xs text-zinc-500 font-medium">...and {companies.length - 5} more</p>
                       </div>
-                    ))}
-                    {users.length > 5 && (
-                      <p className="text-xs text-muted-foreground text-center">...and {users.length - 5} more</p>
-                    )}
-                    {users.length === 0 && (
-                      <p className="text-xs text-muted-foreground text-center">No users found</p>
                     )}
                   </CardContent>
                 </Card>
-                {/* Recent Emails summary */}
-                <Card className="shadow-lg hover:shadow-xl transition-shadow col-span-1 md:col-span-2">
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle>Recent Emails</CardTitle>
-                    <Button asChild size="sm">
-                      <Link href="/admin/emails">View All</Link>
+
+                <Card className="bg-zinc-900/80 border-zinc-800 shadow-xl backdrop-blur-xl flex flex-col">
+                  <CardHeader className="flex flex-row items-center justify-between border-b border-zinc-800/50 pb-4">
+                    <CardTitle className="text-white text-lg font-semibold flex items-center gap-2">
+                      <MailIcon className="w-5 h-5 text-violet-400" />
+                      Recent Emails
+                    </CardTitle>
+                    <Button asChild size="sm" className="bg-violet-500/10 text-violet-400 hover:bg-violet-500/20 border border-violet-500/30 transition-colors">
+                      <NextLink href="/admin/emails">View All</NextLink>
                     </Button>
                   </CardHeader>
-                  <CardContent className="grid gap-4">
+                  <CardContent className="grid gap-3 pt-4 flex-1">
                     {emails.slice(0, 5).map(email => {
                       const createdAt = typeof email.createdAt === 'string' ? new Date(email.createdAt) : email.createdAt.toDate();
                       return (
-                        <div key={email.id} className="flex flex-col gap-1">
+                        <div key={email.id} className="flex flex-col gap-1.5 p-3 rounded-lg bg-zinc-950/50 border border-zinc-800/50 hover:border-zinc-700 transition-colors">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium truncate max-w-32">{email.subject}</span>
-                            <span className="text-xs text-muted-foreground">{createdAt.toLocaleDateString()}</span>
+                            <span className="text-sm font-semibold text-zinc-200 truncate max-w-[200px]">{email.subject}</span>
+                            <span className="text-[10px] uppercase tracking-wider font-medium text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">{createdAt.toLocaleDateString()}</span>
                           </div>
-                          <span className="text-xs text-muted-foreground">{email.recipient}</span>
+                          <div className="flex items-center gap-1.5 text-xs text-zinc-400">
+                            <span className="truncate">{email.recipient}</span>
+                          </div>
                         </div>
                       );
                     })}
-                    {emails.length > 5 && (
-                      <p className="text-xs text-muted-foreground text-center">...and {emails.length - 5} more</p>
-                    )}
                     {emails.length === 0 && (
-                      <p className="text-xs text-muted-foreground text-center">No emails sent yet</p>
+                      <div className="flex items-center justify-center flex-1 h-full py-8 text-zinc-500 text-sm">
+                        No emails sent yet
+                      </div>
                     )}
                   </CardContent>
                 </Card>
               </div>
             </TabsContent>
-            {/* <TabsContent value="insights">
-              <div className="grid gap-4 md:grid-cols-2">
-                <NaturalLanguageQuery />
-                <SummarizedReport />
+
+            <TabsContent value="alerts" className="mt-0">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 py-4">
+                <Card className="relative overflow-hidden border border-red-500/30 bg-gradient-to-br from-red-500/10 to-zinc-900 shadow-[0_0_20px_rgba(239,68,68,0.05)] hover:shadow-[0_0_25px_rgba(239,68,68,0.15)] transition-all">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2 z-10 relative">
+                    <CardTitle className="text-base font-semibold text-red-400 flex items-center gap-2">
+                      <ShieldAlert className="w-5 h-5" />
+                      Security Breach Detected
+                    </CardTitle>
+                    <span className="text-xs font-medium px-2 py-1 rounded-md bg-red-500/20 text-red-300 border border-red-500/30">2 min ago</span>
+                  </CardHeader>
+                  <CardContent className="z-10 relative">
+                    <p className="text-sm text-red-200/80 leading-relaxed">Multiple failed login attempts detected from IP 192.168.1.101. User account locked for 30 minutes.</p>
+                  </CardContent>
+                </Card>
+                
+                <Card className="relative overflow-hidden border border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-zinc-900 shadow-[0_0_20px_rgba(245,158,11,0.05)] hover:shadow-[0_0_25px_rgba(245,158,11,0.15)] transition-all">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2 z-10 relative">
+                    <CardTitle className="text-base font-semibold text-amber-400 flex items-center gap-2">
+                      <AlertTriangle className="w-5 h-5" />
+                      Suspicious Activity
+                    </CardTitle>
+                    <span className="text-xs font-medium px-2 py-1 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30">10 min ago</span>
+                  </CardHeader>
+                  <CardContent className="z-10 relative">
+                    <p className="text-sm text-amber-200/80 leading-relaxed">Unusual volume of outbound emails detected from user john.doe@company.com.</p>
+                  </CardContent>
+                </Card>
+
+                <Card className="relative overflow-hidden border border-cyan-500/30 bg-gradient-to-br from-cyan-500/10 to-zinc-900 shadow-[0_0_20px_rgba(6,182,212,0.05)] hover:shadow-[0_0_25px_rgba(6,182,212,0.15)] transition-all">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2 z-10 relative">
+                    <CardTitle className="text-base font-semibold text-cyan-400 flex items-center gap-2">
+                      <MonitorSmartphone className="w-5 h-5" />
+                      New Device Login
+                    </CardTitle>
+                    <span className="text-xs font-medium px-2 py-1 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">30 min ago</span>
+                  </CardHeader>
+                  <CardContent className="z-10 relative">
+                    <p className="text-sm text-cyan-200/80 leading-relaxed">User jane.smith@company.com logged in from a new device (Chrome, Windows 10).</p>
+                  </CardContent>
+                </Card>
               </div>
-            </TabsContent> */}
-            <TabsContent value="beacon">
-              <BeaconTracking isAdmin={true} />
-            </TabsContent>
-            <TabsContent value="alerts">
-              {/* Hardcoded alerts for demonstration */}
-              <div className="space-y-4 p-4">
-                <Card className="border-l-4 border-red-500 bg-red-50">
-                  <CardHeader className="flex flex-row items-center justify-between pb-1">
-                    <CardTitle className="text-base text-red-700">Security Breach Detected</CardTitle>
-                    <span className="text-xs text-red-600">2 min ago</span>
-                  </CardHeader>
-                  <CardContent className="text-sm text-red-800">Multiple failed login attempts detected from IP 192.168.1.101. User account locked for 30 minutes.</CardContent>
-                </Card>
-                <Card className="border-l-4 border-yellow-500 bg-yellow-50">
-                  <CardHeader className="flex flex-row items-center justify-between pb-1">
-                    <CardTitle className="text-base text-yellow-700">Suspicious Email Activity</CardTitle>
-                    <span className="text-xs text-yellow-600">10 min ago</span>
-                  </CardHeader>
-                  <CardContent className="text-sm text-yellow-800">Unusual volume of outbound emails detected from user john.doe@company.com.</CardContent>
-                </Card>
-                <Card className="border-l-4 border-blue-500 bg-blue-50">
-                  <CardHeader className="flex flex-row items-center justify-between pb-1">
-                    <CardTitle className="text-base text-blue-700">New Device Login</CardTitle>
-                    <span className="text-xs text-blue-600">30 min ago</span>
-                  </CardHeader>
-                  <CardContent className="text-sm text-blue-800">User jane.smith@company.com logged in from a new device (Chrome, Windows 10).</CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-            <TabsContent value="activity">
-              <ActivityLogs />
             </TabsContent>
           </Tabs>
         </main>

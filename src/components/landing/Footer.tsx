@@ -1,104 +1,105 @@
 import React from 'react';
 import Link from 'next/link';
-import { Shield, Lock, Users, Mail, Phone, MapPin } from 'lucide-react';
+import { Shield, Lock, Users, Mail, Phone, MapPin, Github, Twitter, Linkedin } from 'lucide-react';
 
 export const Footer = () => {
   return (
-    <footer className="bg-white border-t border-gray-200/60">
-      <div className="container mx-auto px-6 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-6xl mx-auto">
+    <footer className="bg-zinc-950 border-t border-zinc-800 pt-16 pb-8">
+      <div className="container mx-auto px-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 max-w-7xl mx-auto">
           {/* Brand Section */}
-          <div className="space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-                <Shield className="h-5 w-5 text-white" />
+          <div className="space-y-6 md:col-span-1">
+            <Link href="/" className="flex items-center gap-3 group">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 shadow-[0_0_15px_rgba(16,185,129,0.2)] transition-all group-hover:shadow-[0_0_20px_rgba(16,185,129,0.4)]">
+                <Shield className="h-5 w-5 text-emerald-400" />
               </div>
-              <span className="text-xl font-bold text-gray-900">Beacon</span>
-            </div>
-            <p className="text-gray-600 text-sm leading-relaxed">
-              Confidential communication. Real-time intelligence. Total control.
+              <span className="font-bold text-white text-xl tracking-wide">Beacon</span>
+            </Link>
+            <p className="text-zinc-400 text-sm leading-relaxed font-light">
+              Military-grade encryption. Real-time threat intelligence. Total data control.
             </p>
+            <div className="flex items-center gap-4 pt-2">
+              <SocialLink href="#" icon={<Twitter className="h-4 w-4" />} />
+              <SocialLink href="#" icon={<Github className="h-4 w-4" />} />
+              <SocialLink href="#" icon={<Linkedin className="h-4 w-4" />} />
+            </div>
           </div>
 
           {/* Quick Links */}
           <div className="space-y-6">
-            <h3 className="text-gray-900 font-semibold text-base">Quick Links</h3>
-            <div className="grid grid-cols-2 gap-y-2 gap-x-4">
-              <Link href="/" className="text-gray-600 hover:text-blue-600 text-sm transition-colors duration-200">
-                Home
-              </Link>
-              <Link href="/about" className="text-gray-600 hover:text-blue-600 text-sm transition-colors duration-200">
-                About
-              </Link>
-              <Link href="/features" className="text-gray-600 hover:text-blue-600 text-sm transition-colors duration-200">
-                Features
-              </Link>
-              <Link href="/pricing" className="text-gray-600 hover:text-blue-600 text-sm transition-colors duration-200">
-                Pricing
-              </Link>
-              <Link href="/contact" className="text-gray-600 hover:text-blue-600 text-sm transition-colors duration-200">
-                Contact
-              </Link>
-              <Link href="/privacy" className="text-gray-600 hover:text-blue-600 text-sm transition-colors duration-200">
-                Privacy Policy
-              </Link>
+            <h3 className="text-white font-semibold text-sm tracking-wide uppercase">Platform</h3>
+            <div className="flex flex-col space-y-3">
+              <FooterLink href="#features">Features</FooterLink>
+              <FooterLink href="#pricing">Pricing</FooterLink>
+              <FooterLink href="#security">Security</FooterLink>
+              <FooterLink href="#compliance">Compliance</FooterLink>
+            </div>
+          </div>
+
+          {/* Resources */}
+          <div className="space-y-6">
+            <h3 className="text-white font-semibold text-sm tracking-wide uppercase">Resources</h3>
+            <div className="flex flex-col space-y-3">
+              <FooterLink href="/docs">Documentation</FooterLink>
+              <FooterLink href="/api">API Reference</FooterLink>
+              <FooterLink href="/blog">Blog</FooterLink>
+              <FooterLink href="/support">Support Center</FooterLink>
             </div>
           </div>
 
           {/* Contact Us */}
           <div className="space-y-6">
-            <h3 className="text-gray-900 font-semibold text-base">Contact Us</h3>
+            <h3 className="text-white font-semibold text-sm tracking-wide uppercase">Contact Us</h3>
             <div className="space-y-4">
-              <div className="flex items-start gap-3 text-gray-600 text-sm">
-                <MapPin className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <div>Beacon</div>
-                  <div>Behala, Kolkata, West Bengal</div>
-                </div>
+              <div className="flex items-start gap-3 text-zinc-400 text-sm">
+                <MapPin className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                <span>Global Headquarters<br/>San Francisco, CA</span>
               </div>
-              <div className="flex items-center gap-3 text-gray-600 text-sm">
-                <Phone className="h-4 w-4 text-blue-600" />
-                <span>+91 98765 43210</span>
+              <div className="flex items-center gap-3 text-zinc-400 text-sm">
+                <Phone className="h-4 w-4 text-emerald-500" />
+                <span>+1 (800) 555-0199</span>
               </div>
-              <div className="flex items-center gap-3 text-gray-600 text-sm">
-                <Mail className="h-4 w-4 text-blue-600" />
-                <span>support@securebeacon.com</span>
-              </div>
-            </div>
-            
-            {/* Follow Us */}
-            <div className="pt-2">
-              <h4 className="text-gray-900 font-medium text-sm mb-3">Follow Us</h4>
-              <div className="flex flex-wrap gap-4">
-                <Link href="#" className="text-gray-500 hover:text-blue-600 transition-colors duration-200 text-sm">
-                  LinkedIn
-                </Link>
-                <Link href="#" className="text-gray-500 hover:text-blue-600 transition-colors duration-200 text-sm">
-                  Twitter (X)
-                </Link>
-                <Link href="#" className="text-gray-500 hover:text-blue-600 transition-colors duration-200 text-sm">
-                  GitHub
-                </Link>
-                <Link href="#" className="text-gray-500 hover:text-blue-600 transition-colors duration-200 text-sm">
-                  Email
-                </Link>
+              <div className="flex items-center gap-3 text-zinc-400 text-sm">
+                <Mail className="h-4 w-4 text-emerald-500" />
+                <span>secure@beacon.dev</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Bottom Section */}
-        <div className="mt-16 pt-8 border-t border-gray-200">
-          <div className="text-center space-y-2">
-            <div className="text-gray-500 text-sm">
-              © 2025 Secure Email + Beacon Platform. All rights reserved.
-            </div>
-            <div className="text-gray-400 text-xs">
-              Built with love ❤️ by VibeCoders at StatusCode2
-            </div>
+        <div className="mt-16 pt-8 border-t border-zinc-800/50 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="text-zinc-500 text-sm">
+            © {new Date().getFullYear()} Beacon Security Platform. All rights reserved.
+          </div>
+          <div className="flex items-center gap-6">
+            <Link href="/privacy" className="text-zinc-500 hover:text-emerald-400 text-sm transition-colors">Privacy Policy</Link>
+            <Link href="/terms" className="text-zinc-500 hover:text-emerald-400 text-sm transition-colors">Terms of Service</Link>
+            <Link href="/cookies" className="text-zinc-500 hover:text-emerald-400 text-sm transition-colors">Cookie Settings</Link>
           </div>
         </div>
       </div>
     </footer>
   );
 };
+
+function FooterLink({ href, children }: { href: string, children: React.ReactNode }) {
+  return (
+    <Link href={href} className="text-zinc-400 hover:text-emerald-400 text-sm transition-colors duration-200 w-fit">
+      {children}
+    </Link>
+  );
+}
+
+function SocialLink({ href, icon }: { href: string, icon: React.ReactNode }) {
+  return (
+    <a 
+      href={href} 
+      className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 hover:bg-emerald-500 hover:text-zinc-950 hover:border-emerald-500 transition-all duration-300"
+      target="_blank" 
+      rel="noopener noreferrer"
+    >
+      {icon}
+    </a>
+  );
+}

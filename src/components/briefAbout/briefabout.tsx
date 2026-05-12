@@ -27,78 +27,77 @@ const CollapseCardFeatures = () => {
   };
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-white via-blue-50/50 to-white px-6 py-20 lg:py-28">
-      {/* Modern Background Elements */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-600/3 via-white to-indigo-600/3" />
-      <div className="absolute top-0 left-1/3 w-80 h-80 bg-gradient-to-br from-blue-600/8 to-transparent rounded-full blur-3xl" />
-      <div className="absolute bottom-0 right-1/3 w-80 h-80 bg-gradient-to-tl from-indigo-600/8 to-transparent rounded-full blur-3xl" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.04),transparent_60%)]" />
+    <section id="features" className="relative overflow-hidden bg-zinc-950 px-6 py-24 lg:py-32">
+      {/* Background ambient lighting */}
+      <div className="absolute top-0 right-0 w-1/3 h-1/2 bg-emerald-500/5 rounded-full blur-[150px] pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-1/3 h-1/2 bg-cyan-500/5 rounded-full blur-[150px] pointer-events-none" />
       
       <div className="mx-auto max-w-7xl relative z-10">
-        {/* Modern Header Section */}
+        {/* Header Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
           viewport={{ once: true }}
-          className="text-center mb-16 lg:mb-20"
+          className="text-center mb-16 lg:mb-24"
         >
-          <div className="inline-flex items-center rounded-full border border-blue-200/50 bg-white/70 backdrop-blur-sm px-5 py-2 mb-6">
-            <FiShield className="mr-2 h-4 w-4 text-blue-600" />
-            <span className="text-sm font-medium text-blue-700 tracking-wide">Platform Overview</span>
+          <div className="inline-flex items-center rounded-full border border-zinc-800 bg-zinc-900/50 px-5 py-2 mb-8 backdrop-blur-sm">
+            <FiShield className="mr-2 h-4 w-4 text-emerald-400" />
+            <span className="text-sm font-medium text-zinc-300 tracking-wide uppercase text-xs">Platform Capabilities</span>
           </div>
           
-          <h2 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-semibold tracking-tight mb-5 leading-[1.1]">
-            <span className="block text-gray-900 mb-1">Secure Communication</span>
-            <span className="block bg-gradient-to-r from-blue-500 via-indigo-500 to-blue-700 bg-clip-text text-transparent font-bold">
-              Made Simple
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 text-white leading-tight">
+            Security. Intelligence. <br className="hidden sm:block" />
+            <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
+              Total Control.
             </span>
           </h2>
           
-          <p className="text-gray-600 text-base lg:text-lg max-w-2xl mx-auto leading-relaxed font-light">
-            Enterprise-grade security meets intuitive design. Protect sensitive communications 
-            with advanced encryption, real-time tracking, and intelligent threat detection.
+          <p className="text-zinc-400 text-lg max-w-2xl mx-auto leading-relaxed font-light">
+            Enterprise-grade protection fused with real-time analytics. See exactly what happens to your data after you hit send.
           </p>
         </motion.div>
 
-        {/* Modern Navigation Controls */}
-        <div className="flex justify-center mb-14">
-          <div className="flex items-center gap-4 p-3 rounded-3xl bg-white/80 backdrop-blur-md border border-blue-200/40 shadow-lg shadow-blue-600/5">
+        {/* Navigation Controls */}
+        <div className="flex justify-center mb-12">
+          <div className="flex items-center gap-6 p-2 rounded-full bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
             <button
-              className="group relative h-10 w-10 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white transition-all duration-300 rounded-full shadow-md hover:shadow-lg transform hover:scale-110 disabled:opacity-30 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-md"
+              className="group relative flex h-12 w-12 items-center justify-center bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-all duration-300 rounded-full disabled:opacity-30 disabled:cursor-not-allowed border border-zinc-700"
               onClick={shiftLeft}
               disabled={position === 0}
             >
-              <FiChevronLeft className="text-lg absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+              <FiChevronLeft className="text-xl" />
             </button>
             
-            {/* Modern Progress Indicators */}
-            <div className="flex items-center gap-2 px-6">
+            {/* Progress Indicators */}
+            <div className="flex items-center gap-3 px-4">
               {features.map((_, index) => (
                 <button
                   key={index}
                   onClick={() => setPosition(index)}
-                  className={`h-2 rounded-full transition-all duration-300 ${
+                  className={`h-1.5 rounded-full transition-all duration-500 ${
                     index === position 
-                      ? "bg-gradient-to-r from-blue-500 to-indigo-500 w-8 shadow-sm" 
-                      : "bg-blue-200/60 w-2 hover:bg-blue-300/70"
+                      ? "bg-emerald-400 w-8 shadow-[0_0_10px_rgba(16,185,129,0.5)]" 
+                      : "bg-zinc-700 w-2 hover:bg-zinc-500"
                   }`}
+                  aria-label={`Go to slide ${index + 1}`}
                 />
               ))}
             </div>
             
             <button
-              className="group relative h-10 w-10 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white transition-all duration-300 rounded-full shadow-md hover:shadow-lg transform hover:scale-110 disabled:opacity-30 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-md"
+              className="group relative flex h-12 w-12 items-center justify-center bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-all duration-300 rounded-full disabled:opacity-30 disabled:cursor-not-allowed border border-zinc-700"
               onClick={shiftRight}
               disabled={position === features.length - 1}
             >
-              <FiChevronRight className="text-lg absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+              <FiChevronRight className="text-xl" />
             </button>
           </div>
         </div>
-        {/* Enhanced Feature Cards */}
-        <div className="relative">
-          <div className="flex gap-8 overflow-hidden">
+
+        {/* Feature Cards Carousel */}
+        <div className="relative overflow-hidden py-4 -mx-4 px-4 sm:mx-0 sm:px-0">
+          <div className="flex gap-6 sm:gap-8 transition-transform duration-500 ease-in-out">
             {features.map((feat, index) => (
               <Feature {...feat} key={index} position={position} index={index} />
             ))}
@@ -116,6 +115,7 @@ interface FeatureProps {
   description: string;
   Icon: IconType;
   metric?: string;
+  color: string;
 }
 
 const Feature = ({
@@ -125,61 +125,72 @@ const Feature = ({
   description,
   Icon,
   metric,
+  color,
 }: FeatureProps) => {
   const translateAmt =
     position >= index ? index * 100 : index * 100 - 100 * (index - position);
 
   return (
     <motion.div
-      animate={{ x: `-${translateAmt}%` }}
+      animate={{ x: `calc(-${translateAmt}% - ${position * 2}rem)` }}
       transition={{
-        ease: "easeInOut",
-        duration: 0.4,
+        type: "spring",
+        stiffness: 200,
+        damping: 25,
       }}
-      className="relative flex min-h-[380px] w-full max-w-md shrink-0 flex-col justify-between overflow-hidden rounded-2xl shadow-xl backdrop-blur-sm border border-blue-200/50 bg-gradient-to-br from-white/95 to-blue-50/90 group hover:border-blue-300/60 hover:shadow-2xl transition-all duration-500"
+      className="relative flex min-h-[400px] w-[85vw] sm:w-[400px] shrink-0 flex-col justify-between overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900/40 p-8 backdrop-blur-md group hover:border-zinc-600 hover:bg-zinc-900/60 transition-all duration-300"
     >
-      {/* Modern Card Background Effects */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 via-transparent to-indigo-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,rgba(59,130,246,0.08),transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      {/* Decorative Gradient Overlay */}
+      <div 
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+        style={{
+          background: `radial-gradient(circle at 80% 0%, ${color}15, transparent 50%)`
+        }}
+      />
       
       {/* Content */}
-      <div className="relative z-10 p-6 flex flex-col h-full">
-        {/* Modern Icon Section */}
-        <div className="mb-6">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-white/90 to-blue-100/80 border border-blue-300/40 group-hover:border-blue-400/60 transition-all duration-300 shadow-sm">
-            <Icon className="text-lg text-blue-600 group-hover:text-blue-700 transition-colors duration-300" />
+      <div className="relative z-10 flex flex-col h-full">
+        <div className="flex items-center justify-between mb-8">
+          <div 
+            className="flex items-center justify-center w-14 h-14 rounded-2xl border border-zinc-700 bg-zinc-800/50 shadow-inner group-hover:scale-110 transition-transform duration-500"
+          >
+            <Icon className="text-2xl" style={{ color }} />
           </div>
-        </div>
-        
-        {/* Modern Title and Metric */}
-        <div className="mb-5">
-          <h3 className="text-lg lg:text-xl font-semibold text-gray-900 mb-2 leading-tight">
-            {title}
-          </h3>
+          
           {metric && (
-            <div className="inline-flex items-center rounded-lg bg-white/90 border border-blue-300/40 px-3 py-1 shadow-sm">
-              <span className="text-xs font-medium text-blue-700 tracking-wide">{metric}</span>
+            <div className="inline-flex items-center rounded-full border border-zinc-700 bg-zinc-900/80 px-3 py-1 shadow-sm">
+              <span className="text-xs font-semibold tracking-wide uppercase" style={{ color }}>{metric}</span>
             </div>
           )}
         </div>
         
-        {/* Modern Description */}
-        <p className="text-gray-600 text-sm leading-relaxed flex-grow font-light">
+        <div className="mb-4">
+          <h3 className="text-2xl font-bold text-white mb-4 leading-tight">
+            {title}
+          </h3>
+        </div>
+        
+        <p className="text-zinc-400 text-base leading-relaxed flex-grow font-light">
           {description}
         </p>
         
-        {/* Modern Bottom Accent */}
-        <div className="mt-6 pt-4 border-t border-blue-200/40">
-          <div className="flex items-center text-xs text-blue-600/80 font-medium">
-            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mr-2 animate-pulse"></div>
-            Active & Secured
+        {/* Bottom Accent */}
+        <div className="mt-8 pt-6 border-t border-zinc-800/80">
+          <div className="flex items-center text-sm font-medium text-zinc-300">
+            <div 
+              className="w-2 h-2 rounded-full mr-3 animate-pulse"
+              style={{ backgroundColor: color, boxShadow: `0 0 10px ${color}` }}
+            />
+            System Active
           </div>
         </div>
       </div>
       
-      {/* Modern Decorative Elements */}
-      <div className="absolute top-3 right-3 w-24 h-24 bg-gradient-to-br from-blue-600/15 to-transparent rounded-full blur-xl group-hover:from-blue-600/20 transition-all duration-500" />
-      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500 to-indigo-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
+      {/* Bottom glowing line */}
+      <div 
+        className="absolute bottom-0 left-0 right-0 h-1 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" 
+        style={{ backgroundColor: color }}
+      />
     </motion.div>
   );
 };
@@ -188,40 +199,43 @@ export default CollapseCardFeatures;
 
 const features = [
   {
-    title: "Confidential Emails, Simplified",
+    title: "Military-Grade Encryption",
     Icon: FiLock,
     metric: "End-to-End",
+    color: "#10B981", // emerald-500
     description:
-      "Every email is encrypted and protected with secure links and PIN-based access. Sensitive data stays confidential, even after it's sent.",
+      "Every message is fortified with state-of-the-art encryption algorithms. Sensitive payloads remain mathematically unreadable to unauthorized entities.",
   },
   {
-    title: "Real-Time Beacon Tracking",
+    title: "Invisible Beacon Tech",
     Icon: FiActivity,
     metric: "Live Tracking",
+    color: "#06B6D4", // cyan-500
     description:
-      "Embedded beacons give instant insights into who accessed your email, at what time, from which device, and location—giving you full visibility and control.",
+      "Embed stealth trackers within communications. Monitor precise access times, device fingerprints, and geolocation coordinates the moment your data is opened.",
   },
   {
-    title: "Smart Threat Detection",
+    title: "Autonomous Defense",
     Icon: FiShield,
     metric: "AI-Powered",
+    color: "#6366F1", // indigo-500
     description:
-      "Detect suspicious logins with device/IP mismatch alerts. Our system flags risky activity in real-time, preventing leaks and misuse.",
+      "Our heuristics engine analyzes access patterns in real-time. Anomalous behaviors trigger immediate lockdown protocols to prevent data exfiltration.",
   },
   {
-    title: "Admin Dashboard & Control",
+    title: "Command Center",
     Icon: FiUsers,
     metric: "Centralized",
+    color: "#8B5CF6", // violet-500
     description:
-      "From revoking links instantly to monitoring failed login attempts, admins get a powerful dashboard to oversee security, compliance, and reporting with ease.",
+      "A comprehensive tactical dashboard for administrators. Revoke access instantly, audit compliance logs, and manage user permissions from a single pane of glass.",
   },
   {
-    title: "AI-Powered Security Insights",
+    title: "Threat Intelligence",
     Icon: FiZap,
     metric: "Smart Reports",
+    color: "#F59E0B", // amber-500
     description:
-      "Daily summaries and incident reports translate complex logs into clear insights. AI highlights risks, suggests fixes, and coaches employees on safer practices.",
+      "Synthesize raw telemetry into actionable intelligence. Identify vulnerabilities, train your workforce, and stay one step ahead of potential breaches.",
   },
 ];
-
-
