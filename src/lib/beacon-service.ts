@@ -1,5 +1,13 @@
-import { databases, DATABASE_ID, BEACON_COLLECTION_ID, BeaconData } from './appwrite';
-import { Query } from 'appwrite';
+async function parseBeaconError(response: Response): Promise<string> {
+    try {
+        const body = await response.json();
+        if (body?.error) return String(body.error);
+        if (body?.details) return String(body.details);
+    } catch {
+        /* ignore */
+    }
+    return response.statusText || `HTTP ${response.status}`;
+}
 
 export class BeaconService {
     // Get all beacon logs for admin
@@ -12,13 +20,14 @@ export class BeaconService {
             });
 
             if (!response.ok) {
-                throw new Error(`Failed to fetch beacon logs: ${response.statusText}`);
+                console.warn('[BeaconService] getAllBeaconLogs:', await parseBeaconError(response));
+                return [];
             }
 
             return await response.json();
         } catch (error) {
-            console.error('Failed to fetch beacon logs:', error);
-            throw error;
+            console.warn('Failed to fetch beacon logs:', error);
+            return [];
         }
     }
 
@@ -32,13 +41,14 @@ export class BeaconService {
             });
 
             if (!response.ok) {
-                throw new Error(`Failed to fetch company beacon logs: ${response.statusText}`);
+                console.warn('[BeaconService] getBeaconLogsByCompany:', await parseBeaconError(response));
+                return [];
             }
 
             return await response.json();
         } catch (error) {
-            console.error('Failed to fetch company beacon logs:', error);
-            throw error;
+            console.warn('Failed to fetch company beacon logs:', error);
+            return [];
         }
     }
 
@@ -52,13 +62,14 @@ export class BeaconService {
             });
 
             if (!response.ok) {
-                throw new Error(`Failed to fetch email beacon logs: ${response.statusText}`);
+                console.warn('[BeaconService] getBeaconLogsByEmail:', await parseBeaconError(response));
+                return [];
             }
 
             return await response.json();
         } catch (error) {
-            console.error('Failed to fetch email beacon logs:', error);
-            throw error;
+            console.warn('Failed to fetch email beacon logs:', error);
+            return [];
         }
     }
 
@@ -76,13 +87,14 @@ export class BeaconService {
             });
 
             if (!response.ok) {
-                throw new Error(`Failed to fetch beacon analytics: ${response.statusText}`);
+                console.warn('[BeaconService] getBeaconAnalytics:', await parseBeaconError(response));
+                return null;
             }
 
             return await response.json();
         } catch (error) {
-            console.error('Failed to fetch beacon analytics:', error);
-            throw error;
+            console.warn('Failed to fetch beacon analytics:', error);
+            return null;
         }
     }
 
@@ -100,13 +112,14 @@ export class BeaconService {
             });
 
             if (!response.ok) {
-                throw new Error(`Failed to fetch top opened emails: ${response.statusText}`);
+                console.warn('[BeaconService] getTopOpenedEmails:', await parseBeaconError(response));
+                return [];
             }
 
             return await response.json();
         } catch (error) {
-            console.error('Failed to fetch top opened emails:', error);
-            throw error;
+            console.warn('Failed to fetch top opened emails:', error);
+            return [];
         }
     }
 
@@ -227,16 +240,17 @@ export class BeaconService {
     // Track pixel load (for email opens)
     static async trackPixelLoad(emailId: string, recipientEmail: string, companyId: string, senderUserId: string) {
         try {
-            const appwriteEndpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || 'http://66.42.92.192/v1';
+            const appwriteEndpoint = (process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || '').trim();
+            if (!appwriteEndpoint) {
+                return '';
+            }
             const beaconFunctionId = process.env.NEXT_PUBLIC_APPWRITE_BEACON_FUNCTION_ID || 'beacon-tracker';
-            
-            // Create tracking pixel URL
-            const pixelUrl = `${appwriteEndpoint}/functions/${beaconFunctionId}/executions?emailId=${emailId}&recipientEmail=${encodeURIComponent(recipientEmail)}&companyId=${encodeURIComponent(companyId)}&senderUserId=${encodeURIComponent(senderUserId)}`;
-            
-            // Load pixel (this will trigger the beacon)
+            const base = appwriteEndpoint.replace(/\/$/, '');
+            const pixelUrl = `${base}/functions/${beaconFunctionId}/executions?emailId=${emailId}&recipientEmail=${encodeURIComponent(recipientEmail)}&companyId=${encodeURIComponent(companyId)}&senderUserId=${encodeURIComponent(senderUserId)}`;
+
             const img = new Image();
             img.src = pixelUrl;
-            
+
             return pixelUrl;
         } catch (error) {
             console.error('Failed to track pixel load:', error);

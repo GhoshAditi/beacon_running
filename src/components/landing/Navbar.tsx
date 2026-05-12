@@ -1,88 +1,99 @@
-import React from "react";
-import { motion } from "framer-motion";
+import React, { useState, useEffect } from "react";
+import { motion, useScroll, useMotionValueEvent } from "framer-motion";
+import Link from "next/link";
+import { Shield } from "lucide-react";
 
 export const Navbar = () => {
   return (
-    <section >
+    <section>
       <SimpleFloatingNav />
     </section>
   );
 };
 
 const SimpleFloatingNav = () => {
+  const { scrollY } = useScroll();
+  const [hidden, setHidden] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    const previous = scrollY.getPrevious() || 0;
+    if (latest > previous && latest > 150) {
+      setHidden(true);
+    } else {
+      setHidden(false);
+    }
+    
+    if (latest > 50) {
+      setIsScrolled(true);
+    } else {
+      setIsScrolled(false);
+    }
+  });
+
   return (
-    <nav className="fixed left-[50%] top-8 z-50 flex w-[90%] max-w-[90vw] -translate-x-[50%] items-center justify-between rounded-2xl border border-gray-200/60 bg-white/95 backdrop-blur-xl backdrop-saturate-150 px-8 py-4 text-sm shadow-lg shadow-gray-900/10">
+    <motion.nav
+      variants={{
+        visible: { y: 0, opacity: 1 },
+        hidden: { y: "-100%", opacity: 0 },
+      }}
+      animate={hidden ? "hidden" : "visible"}
+      transition={{ duration: 0.35, ease: "easeInOut" }}
+      className={`fixed top-6 left-0 right-0 z-50 mx-auto flex w-[90%] max-w-7xl items-center justify-between rounded-full border px-6 py-4 transition-all duration-300 ${
+        isScrolled 
+          ? "border-white/10 bg-zinc-950/80 shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-md" 
+          : "border-transparent bg-transparent"
+      }`}
+    >
       <Logo />
 
-      
+      <div className="hidden md:flex items-center gap-8">
+        <NavLink href="#features">Features</NavLink>
+        <NavLink href="#how-it-works">How it Works</NavLink>
+        <NavLink href="#pricing">Pricing</NavLink>
+      </div>
 
-      <JoinButton />
-    </nav>
+      <div className="flex items-center gap-4">
+        <Link href="/login" className="hidden sm:block text-sm font-medium text-zinc-300 hover:text-white transition-colors">
+          Sign In
+        </Link>
+        <JoinButton />
+      </div>
+    </motion.nav>
   );
 };
 
 const Logo = () => {
   return (
-    <div className="flex items-center gap-2">
-      <svg
-        width="24"
-        height="auto"
-        viewBox="0 0 50 39"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        className="fill-blue-700"
-      >
-        <path
-          d="M16.4992 2H37.5808L22.0816 24.9729H1L16.4992 2Z"
-          stopColor="#000000"
-        ></path>
-        <path
-          d="M17.4224 27.102L11.4192 36H33.5008L49 13.0271H32.7024L23.2064 27.102H17.4224Z"
-          stopColor="#000000"
-        ></path>
-      </svg>
-      <span className="font-bold text-gray-800 text-lg">Beacon</span>
-    </div>
+    <Link href="/" className="flex items-center gap-2 group">
+      <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-[0_0_15px_rgba(16,185,129,0.5)] transition-all group-hover:shadow-[0_0_25px_rgba(16,185,129,0.7)]">
+        <div className="absolute inset-[1px] rounded-[11px] bg-zinc-950 flex items-center justify-center">
+          <Shield className="h-5 w-5 text-emerald-400" />
+        </div>
+      </div>
+      <span className="font-bold text-white text-xl tracking-wide">Beacon</span>
+    </Link>
   );
 };
 
-const NavLink = ({ children }: { children: string }) => {
+const NavLink = ({ children, href }: { children: string; href: string }) => {
   return (
-    <a href="#" rel="nofollow" className="block overflow-hidden">
-      <div
-        className="h-[20px] transition-transform duration-500 ease-in-out hover:-translate-y-5"
-      >
-        <span className="flex h-[20px] items-center text-gray-600 font-medium">{children}</span>
-        <span className="flex h-[20px] items-center text-gray-900 font-medium">
-          {children}
-        </span>
-      </div>
-    </a>
+    <Link href={href} className="relative group text-sm font-medium text-zinc-400 hover:text-white transition-colors">
+      {children}
+      <span className="absolute -bottom-1 left-0 h-[2px] w-0 bg-emerald-500 transition-all duration-300 group-hover:w-full"></span>
+    </Link>
   );
 };
 
 const JoinButton = () => {
   return (
-    <a href="/login">
-      <button
-        className={`
-            relative z-0 flex items-center gap-2 overflow-hidden whitespace-nowrap rounded-2xl border 
-            border-gray-300 px-6 py-2 font-medium
-           text-gray-700 transition-all duration-300
-            
-            before:absolute before:inset-0
-            before:-z-10 before:translate-y-[200%]
-            before:scale-[2.5]
-            before:rounded-[100%] before:bg-gradient-to-r before:from-gray-800 before:to-gray-900
-            before:transition-transform before:duration-1000
-            before:content-[""]
-    
-            hover:scale-105 hover:border-gray-400 hover:text-white
-            hover:before:translate-y-[0%]
-            active:scale-100`}
-      >
-        Login
+    <Link href="/login">
+      <button className="relative overflow-hidden rounded-full p-[1px] focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-zinc-950">
+        <span className="absolute inset-[-1000%] animate-[spin_2s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#000000_0%,#10B981_50%,#000000_100%)]" />
+        <span className="inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-zinc-950 px-6 py-2 text-sm font-medium text-white backdrop-blur-3xl transition-all hover:bg-zinc-900">
+          Get Started
+        </span>
       </button>
-    </a>
+    </Link>
   );
 };

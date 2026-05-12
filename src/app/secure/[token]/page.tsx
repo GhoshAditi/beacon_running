@@ -1,9 +1,8 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { LockKeyhole, ShieldCheck, ShieldX, Paperclip, Download, Hourglass, MapPin } from "lucide-react";
+import { LockKeyhole, ShieldCheck, ShieldX, Paperclip, Download, Hourglass, MapPin, ShieldAlert } from "lucide-react";
 import GuardianMailLogo from "@/components/icons/logo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,27 +14,56 @@ import type { VerifyPinOutput } from "@/ai/types/unlock-content-types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { data, type Email } from "@/lib/data";
 import { Timestamp } from "firebase/firestore";
-import { BeaconService } from "@/lib/beacon-service";
-import { trackPageView } from "@/lib/tracking-utils";
+
+function getLocationWithPermission(): Promise<GeolocationPosition> {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("Geolocation is not supported by this browser."));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => resolve(position),
+      (error) => {
+        let errorMessage = "Location access denied.";
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = "Location access denied by user.";
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = "Location information is unavailable.";
+            break;
+          case error.TIMEOUT:
+            errorMessage = "Location request timed out.";
+            break;
+        }
+        reject(new Error(errorMessage));
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 600000 }
+    );
+  });
+}
 
 function UnlockedContentDisplay({ document }: { document: NonNullable<VerifyPinOutput['document']> }) {
   return (
-    <div className="flex flex-col items-center w-full">
-      <Card className="w-full max-w-2xl shadow-2xl animate-in fade-in zoom-in-95 bg-gradient-to-br from-white via-slate-50 to-slate-200 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 border-0 relative">
+    <div className="flex flex-col items-center w-full z-10 relative">
+      <Card className="w-full max-w-2xl bg-zinc-900/90 backdrop-blur-2xl border-zinc-800 shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden rounded-2xl animate-in fade-in zoom-in-95 duration-500 relative">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-cyan-500"></div>
         <div className="absolute top-4 right-6 flex items-center gap-2 z-10">
-          <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 dark:bg-green-900/60 text-green-700 dark:text-green-300 text-xs font-semibold shadow-sm">
+          <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase tracking-wider shadow-[0_0_15px_rgba(16,185,129,0.2)]">
             <ShieldCheck className="h-4 w-4" /> Access Granted
           </span>
         </div>
-        <CardContent className="space-y-6 px-0 pb-8 pt-8">
-          <h3 className="font-semibold text-2xl text-primary mb-2 text-center">{document.title}</h3>
+        <CardContent className="space-y-6 px-8 pb-10 pt-10">
+          <h3 className="font-bold text-3xl text-white mb-6 tracking-tight flex items-center gap-3">
+            <LockKeyhole className="h-6 w-6 text-emerald-400" />
+            {document.title}
+          </h3>
           <div
-            className="prose dark:prose-invert text-base leading-relaxed bg-white/80 dark:bg-slate-900/60 rounded-lg p-6 shadow mx-auto"
-            style={{ width: '100%', maxWidth: '100%' }}
+            className="prose prose-invert max-w-none text-base leading-relaxed bg-zinc-950/50 border border-zinc-800/80 rounded-xl p-8 shadow-inner text-white [&_*]:!text-white [&_a]:!text-cyan-400 [&_a:hover]:!text-cyan-300"
             dangerouslySetInnerHTML={{ __html: document.description }}
           />
           {document.imageUrl && document.imageUrl.trim() && document.imageUrl !== 'about:blank' && !/800x600/.test(document.imageUrl) ? (
-            <div className="relative w-full max-w-2xl mx-auto rounded-xl overflow-hidden border shadow-lg bg-white dark:bg-slate-900">
+            <div className="relative w-full max-w-2xl mx-auto rounded-xl overflow-hidden border border-zinc-800 shadow-2xl bg-zinc-950 p-2">
               <Image
                 src={document.imageUrl}
                 alt="Secure document"
@@ -44,7 +72,7 @@ function UnlockedContentDisplay({ document }: { document: NonNullable<VerifyPinO
                 sizes="100vw"
                 style={{ width: '100%', height: 'auto', maxHeight: 400, objectFit: 'contain' }}
                 data-ai-hint={document.imageHint}
-                className="transition-all duration-300 hover:scale-105"
+                className="transition-all duration-300 hover:scale-[1.02] rounded-lg"
                 priority
               />
             </div>
@@ -53,11 +81,11 @@ function UnlockedContentDisplay({ document }: { document: NonNullable<VerifyPinO
             <a
               href={document.attachmentDataUri}
               download={document.attachmentFilename}
-              className="block mt-6"
+              className="block mt-8"
             >
-              <Button variant="outline" className="w-full">
-                <Download className="mr-2 h-4 w-4" />
-                Download Attachment: {document.attachmentFilename}
+              <Button variant="outline" className="w-full h-12 bg-indigo-500/10 border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20 hover:text-indigo-300 font-semibold shadow-[0_0_15px_rgba(99,102,241,0.15)] transition-all">
+                <Download className="mr-2 h-5 w-5" />
+                Download Secure Attachment
               </Button>
             </a>
           )}
@@ -107,19 +135,6 @@ export default function SecureLinkPage() {
 
         setEmailMeta(email);
 
-        // Track email access attempt with beacon (every time the page is loaded)
-        try {
-          await trackPageView(
-            email.id, 
-            email.recipient, 
-            email.companyId, 
-            email.senderId
-          );
-          console.log('Email access tracked successfully');
-        } catch (error) {
-          console.error('Failed to track email access:', error);
-        }
-
         if (email.isGuest) {
           // For guests, bypass PIN and unlock content directly
           const result = await verifyPinAndGetContent({ token, pin: "GUEST_ACCESS" });
@@ -132,7 +147,7 @@ export default function SecureLinkPage() {
           // Check if recipient is in the database to determine if PIN is required
           const allUsers = await data.users.list();
           const recipientInDb = allUsers.find(user => user.email === email.recipient);
-          
+
           if (!recipientInDb) {
             // Recipient not in database - require location but no PIN
             setRequiresPin(false);
@@ -165,9 +180,9 @@ export default function SecureLinkPage() {
   const requestLocationPermission = async () => {
     setIsRequestingLocation(true);
     setError("");
-    
+
     try {
-      const position = await BeaconService.getLocationWithPermission();
+      const position = await getLocationWithPermission();
       setUserLocation(position);
       setLocationPermissionGranted(true);
       setError("");
@@ -187,18 +202,6 @@ export default function SecureLinkPage() {
       const result = await verifyPinAndGetContent({ token, pin });
       if (result.success) {
         setUnlockedContent(result.document ?? null);
-        // Track successful PIN entry with additional tracking
-        try {
-          await trackPageView(
-            emailMeta!.id, 
-            emailMeta!.recipient, 
-            emailMeta!.companyId, 
-            emailMeta!.senderId
-          );
-          console.log('Successful PIN entry tracked');
-        } catch (error) {
-          console.error('Failed to track successful PIN entry:', error);
-        }
         window.dispatchEvent(new Event('refresh-logs'));
       } else {
         setError(result.error || "An unknown error occurred.");
@@ -213,131 +216,147 @@ export default function SecureLinkPage() {
 
   const renderContent = () => {
     if (isLoading) {
-      return <Skeleton className="h-96 w-full max-w-sm" />;
+      return (
+        <div className="flex flex-col items-center justify-center z-10 relative space-y-4">
+          <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-zinc-400 font-medium animate-pulse">Decrypting secure channel...</p>
+        </div>
+      );
     }
 
     if (error) {
-       return (
-         <Card className="w-full max-w-sm text-center">
-            <CardHeader>
-                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
-                     <Hourglass className="h-8 w-8 text-destructive" />
-                </div>
-                <CardTitle className="text-destructive">Access Denied</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <p>{error}</p>
-            </CardContent>
-         </Card>
-       )
+      return (
+        <Card className="w-full max-w-md text-center bg-zinc-900/80 backdrop-blur-xl border-zinc-800 shadow-2xl relative z-10 overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-orange-500"></div>
+          <CardHeader className="pt-8">
+            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-500/10 border border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.2)]">
+              <ShieldAlert className="h-8 w-8 text-red-500" />
+            </div>
+            <CardTitle className="text-2xl text-white font-bold tracking-tight">Access Denied</CardTitle>
+          </CardHeader>
+          <CardContent className="pb-8 px-6">
+            <p className="text-zinc-400 text-lg">{error}</p>
+          </CardContent>
+        </Card>
+      )
     }
 
     if (unlockedContent) {
       return <UnlockedContentDisplay document={unlockedContent} />;
     }
-    
+
     // Show location permission request if not granted and not guest
     if (emailMeta && !emailMeta.isGuest && !locationPermissionGranted) {
       return (
-        <Card className="w-full max-w-sm shadow-2xl">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/50">
-              <MapPin className="h-8 w-8 text-orange-600 dark:text-orange-400" />
+        <Card className="w-full max-w-sm bg-zinc-900/80 backdrop-blur-xl border-zinc-800 shadow-2xl relative z-10 overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 to-amber-500"></div>
+          <CardHeader className="text-center pt-8">
+            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-500/10 border border-orange-500/20 shadow-[0_0_20px_rgba(249,115,22,0.2)]">
+              <MapPin className="h-8 w-8 text-orange-500" />
             </div>
-            <CardTitle className="text-2xl">Location Required</CardTitle>
-            <CardDescription>
-              For security purposes, this secure document requires location access to verify your identity and track access attempts.
+            <CardTitle className="text-2xl text-white font-bold tracking-tight">Location Required</CardTitle>
+            <CardDescription className="text-zinc-400 mt-2">
+              For security purposes, this secure document requires location access to verify your identity before viewing.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6 px-6">
             {error && (
-              <div className="flex items-center gap-2 text-sm text-destructive">
-                <ShieldX className="h-4 w-4" />
+              <div className="flex items-center gap-2 text-sm text-red-400 bg-red-500/10 p-3 rounded-lg border border-red-500/20">
+                <ShieldX className="h-4 w-4 shrink-0" />
                 <p>{error}</p>
               </div>
             )}
-            <Button 
-              onClick={requestLocationPermission} 
-              className="w-full" 
+            <Button
+              onClick={requestLocationPermission}
+              className="w-full bg-orange-500 text-zinc-950 hover:bg-orange-400 font-semibold shadow-[0_0_15px_rgba(249,115,22,0.3)] transition-all h-12 text-md"
               disabled={isRequestingLocation}
             >
-              {isRequestingLocation ? 'Requesting Location...' : 'Grant Location Access'}
+              {isRequestingLocation ? 'Requesting...' : 'Grant Access'}
             </Button>
           </CardContent>
-          <CardFooter className="text-center text-xs text-muted-foreground">
-            <p>Your location data is used only for security monitoring and will not be stored permanently.</p>
+          <CardFooter className="text-center text-xs text-zinc-500 pb-6 px-6 border-t border-zinc-800/50 pt-4 mt-4 bg-zinc-950/30">
+            <p>Your location is requested only for this verification step.</p>
           </CardFooter>
         </Card>
       );
     }
-    
+
     if (emailMeta && !emailMeta.isGuest && requiresPin) {
       return (
-        <Card className="w-full max-w-sm shadow-2xl">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-              <LockKeyhole className="h-8 w-8 text-primary" />
+        <Card className="w-full max-w-sm bg-zinc-900/80 backdrop-blur-xl border-zinc-800 shadow-2xl relative z-10 overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 to-blue-500"></div>
+          <CardHeader className="text-center pt-8 pb-4">
+            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-cyan-500/10 border border-cyan-500/20 shadow-[0_0_20px_rgba(6,182,212,0.2)]">
+              <LockKeyhole className="h-8 w-8 text-cyan-400" />
             </div>
-            <CardTitle className="text-2xl">Secure Access</CardTitle>
-            <CardDescription>Enter your 6-digit PIN to view the protected content.</CardDescription>
+            <CardTitle className="text-2xl text-white font-bold tracking-tight">Secure Access</CardTitle>
+            <CardDescription className="text-zinc-400 mt-2">Enter your 6-digit PIN to decrypt the protected content.</CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="pin">6-Digit PIN</Label>
+          <CardContent className="px-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-3">
+                <Label htmlFor="pin" className="text-zinc-300 font-medium">6-Digit PIN</Label>
                 <Input
                   id="pin"
                   type="password"
                   value={pin}
-                  onChange={(e) => setPin(e.target.value)}
+                  onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
                   maxLength={6}
                   placeholder="••••••"
-                  className="text-center text-2xl tracking-[0.5em]"
+                  className="text-center text-2xl tracking-[0.7em] bg-zinc-950/50 border-zinc-800 text-white placeholder:text-zinc-700 focus-visible:ring-cyan-500 h-14 font-mono"
                   required
                 />
               </div>
               {error && (
-                <div className="flex items-center gap-2 text-sm text-destructive">
-                  <ShieldX className="h-4 w-4" />
+                <div className="flex items-center gap-2 text-sm text-red-400 bg-red-500/10 p-3 rounded-lg border border-red-500/20">
+                  <ShieldX className="h-4 w-4 shrink-0" />
                   <p>{error}</p>
                 </div>
               )}
-              <Button type="submit" className="w-full" disabled={isLoading || !pin || pin.length < 6}>
-                {isLoading ? 'Verifying...' : 'Unlock Content'}
+              <Button type="submit" className="w-full bg-cyan-500 text-zinc-950 hover:bg-cyan-400 font-bold shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all h-12 text-md" disabled={isLoading || !pin || pin.length < 6}>
+                {isLoading ? 'Decrypting...' : 'Unlock Content'}
               </Button>
             </form>
           </CardContent>
-          <CardFooter className="text-center text-xs text-muted-foreground">
-            <p>This link is secure and tracked. Do not share the PIN.</p>
+          <CardFooter className="text-center text-xs text-zinc-500 pb-6 px-6 pt-6">
+            <div className="w-full flex items-center justify-center gap-1.5 opacity-60">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <p>This link is secure. Do not share.</p>
+            </div>
           </CardFooter>
         </Card>
       );
     }
-    
+
     if (emailMeta && !emailMeta.isGuest && !requiresPin) {
-      // This case should not be reached as non-database recipients are handled automatically
       return (
-        <Card className="w-full max-w-sm shadow-2xl">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/50">
-              <ShieldCheck className="h-8 w-8 text-green-600 dark:text-green-400" />
+        <Card className="w-full max-w-sm bg-zinc-900/80 backdrop-blur-xl border-zinc-800 shadow-2xl relative z-10 overflow-hidden text-center">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-green-500"></div>
+          <CardHeader className="pt-8">
+            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-500/10 border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+              <ShieldCheck className="h-8 w-8 text-emerald-400" />
             </div>
-            <CardTitle className="text-2xl">Loading Content</CardTitle>
-            <CardDescription>Accessing your secure content...</CardDescription>
+            <CardTitle className="text-2xl text-white font-bold">Decrypting Content</CardTitle>
+            <CardDescription className="text-zinc-400 mt-2">Please wait while we establish a secure connection...</CardDescription>
           </CardHeader>
         </Card>
       );
     }
-    
-    return null; // Should not be reached if logic is correct
+
+    return null;
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
-      <div className="absolute top-8 flex items-center gap-2">
-        <GuardianMailLogo className="h-8 w-8 text-primary" />
-        <span className="text-xl font-bold text-foreground">BeaconMail</span>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-950 text-zinc-100 p-4 relative overflow-hidden selection:bg-cyan-500/30">
+      {/* Background Effects */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-[500px] bg-cyan-500/5 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="absolute bottom-0 left-0 w-full max-w-xl h-[400px] bg-indigo-500/5 rounded-full blur-[100px] pointer-events-none"></div>
+
+      <div className="absolute top-8 flex items-center gap-3 z-10 bg-zinc-950/50 backdrop-blur-md px-4 py-2 rounded-full border border-zinc-800/50">
+        <GuardianMailLogo className="h-6 w-6 text-cyan-400" />
+        <span className="text-lg font-bold text-white tracking-tight">BeaconMail</span>
       </div>
+
       {renderContent()}
     </div>
   );

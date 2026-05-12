@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, test, expect } from '@jest/globals';
 
 // Test the beacon API endpoint

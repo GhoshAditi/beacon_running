@@ -6,13 +6,13 @@ function createServerClient() {
     const client = new Client()
         .setEndpoint(process.env.APPWRITE_ENDPOINT || 'http://66.42.92.192/v1')
         .setProject(process.env.APPWRITE_PROJECT_ID || 'beacondev');
-    
+
     // Set API key for server-side operations
     const apiKey = process.env.APPWRITE_API_KEY || 'beacondev';
     if (apiKey) {
         client.setDevKey(apiKey);
     }
-    
+
     return client;
 }
 
@@ -21,7 +21,7 @@ async function getLocationFromIP(ip: string) {
     try {
         const response = await fetch(`https://ipapi.co/${ip}/json/`);
         const data = await response.json();
-        
+
         return {
             country: data.country_name || 'Unknown',
             city: data.city || 'Unknown',
@@ -74,7 +74,7 @@ function getRealIP(request: NextRequest): string {
     const xRealIP = request.headers.get('x-real-ip');
     const cfConnectingIP = request.headers.get('cf-connecting-ip'); // Cloudflare
     const xClientIP = request.headers.get('x-client-ip');
-    
+
     if (cfConnectingIP) return cfConnectingIP;
     if (xRealIP) return xRealIP;
     if (xClientIP) return xClientIP;
@@ -82,7 +82,7 @@ function getRealIP(request: NextRequest): string {
         // X-Forwarded-For can contain multiple IPs, take the first one
         return xForwardedFor.split(',')[0].trim();
     }
-    
+
     return '127.0.0.1';
 }
 
@@ -90,7 +90,7 @@ function getRealIP(request: NextRequest): string {
 export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
-        
+
         // Extract tracking data from query parameters
         const emailId = searchParams.get('emailId');
         const recipientEmail = searchParams.get('recipientEmail');
@@ -148,7 +148,7 @@ export async function GET(request: NextRequest) {
         // Store in Appwrite database
         const client = createServerClient();
         const databases = new Databases(client);
-        
+
         const databaseId = process.env.APPWRITE_DATABASE_ID || process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || 'email_beacon_db';
         const collectionId = process.env.APPWRITE_BEACON_COLLECTION_ID || process.env.NEXT_PUBLIC_APPWRITE_BEACON_COLLECTION_ID || 'beacon_logs';
 
@@ -172,31 +172,31 @@ export async function GET(request: NextRequest) {
 
             let isSuspicious = false;
             let suspiciousReasons = [];
-            
+
             if (previousLogs.documents.length > 1) {
                 // Get the first (oldest) log for comparison
                 const firstLog = previousLogs.documents[previousLogs.documents.length - 1];
-                
+
                 // Check for differences that indicate suspicious activity
                 if (firstLog.ip && firstLog.ip !== ip) {
                     isSuspicious = true;
                     suspiciousReasons.push(`Different IP: ${firstLog.ip} vs ${ip}`);
                 }
-                
+
                 if (firstLog.device && firstLog.device !== device) {
                     isSuspicious = true;
                     suspiciousReasons.push(`Different device: ${firstLog.device} vs ${device}`);
                 }
-                
+
                 if (firstLog.userAgent && firstLog.userAgent !== userAgent) {
                     isSuspicious = true;
                     suspiciousReasons.push(`Different user agent`);
                 }
-                
+
                 // Check for location differences (if available)
                 try {
-                    const firstLocation = typeof firstLog.location === 'string' 
-                        ? JSON.parse(firstLog.location) 
+                    const firstLocation = typeof firstLog.location === 'string'
+                        ? JSON.parse(firstLog.location)
                         : firstLog.location;
                     if (firstLocation && location) {
                         if (firstLocation.country !== location.country) {
@@ -215,7 +215,7 @@ export async function GET(request: NextRequest) {
             // If suspicious, try to mark the email as revoked and create an alert
             if (isSuspicious) {
                 console.log(`Suspicious activity detected for email ${emailId}: ${suspiciousReasons.join(', ')}`);
-                
+
                 try {
                     // Try to update the email document in Appwrite (if using Appwrite for emails)
                     await databases.updateDocument(
@@ -282,13 +282,13 @@ export async function GET(request: NextRequest) {
 
     } catch (error) {
         console.error('Beacon tracking error:', error);
-        
+
         // Still return a pixel to avoid breaking the email
         const pixel = Buffer.from(
             'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
             'base64'
         );
-        
+
         return new Response(pixel, {
             headers: {
                 'Content-Type': 'image/png',
@@ -308,9 +308,9 @@ export async function POST(request: NextRequest) {
 
         // Validate required fields
         if (!trackingData.emailId || !trackingData.recipientEmail) {
-            return NextResponse.json({ 
-                success: false, 
-                error: 'Missing required fields: emailId and recipientEmail' 
+            return NextResponse.json({
+                success: false,
+                error: 'Missing required fields: emailId and recipientEmail'
             }, { status: 400 });
         }
 
@@ -364,7 +364,7 @@ export async function POST(request: NextRequest) {
         // Store in Appwrite database
         const client = createServerClient();
         const databases = new Databases(client);
-        
+
         const databaseId = process.env.APPWRITE_DATABASE_ID || process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || 'email_beacon_db';
         const collectionId = process.env.APPWRITE_BEACON_COLLECTION_ID || process.env.NEXT_PUBLIC_APPWRITE_BEACON_COLLECTION_ID || 'beacon_logs';
 

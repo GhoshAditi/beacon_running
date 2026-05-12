@@ -1,34 +1,25 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { easeInOut, motion, spring } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import {
-  ArrowRight,
-  ArrowUpRight,
-} from 'lucide-react';
+import { motion, useAnimation } from 'framer-motion';
+import { ArrowRight, ShieldCheck, Activity, LockKeyhole } from 'lucide-react';
+import Link from 'next/link';
 
 export default function AppHero() {
-  // State for animated counters
   const [stats, setStats] = useState({
     secureLinks: 0,
     autoExpiry: 0,
     monitoring: 0,
   });
 
-  // Animation to count up numbers
   useEffect(() => {
     const interval = setInterval(() => {
       setStats((prev) => {
-        const newSecureLinks = prev.secureLinks >= 10000 ? 10000 : prev.secureLinks + 250;
+        const newSecureLinks = prev.secureLinks >= 10000 ? 10000 : prev.secureLinks + 412;
         const newAutoExpiry = prev.autoExpiry >= 7 ? 7 : prev.autoExpiry + 1;
         const newMonitoring = prev.monitoring >= 24 ? 24 : prev.monitoring + 1;
 
-        if (
-          newSecureLinks === 10000 &&
-          newAutoExpiry === 7 &&
-          newMonitoring === 24
-        ) {
+        if (newSecureLinks === 10000 && newAutoExpiry === 7 && newMonitoring === 24) {
           clearInterval(interval);
         }
 
@@ -38,315 +29,119 @@ export default function AppHero() {
           monitoring: newMonitoring,
         };
       });
-    }, 50);
-
+    }, 40);
     return () => clearInterval(interval);
   }, []);
 
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.3,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: { type: spring, stiffness: 100 },
-    },
-  };
-
-  // Floating animation for the cube
-  const floatingAnimation = {
-    y: [0, -10, 0],
-    transition: {
-      duration: 4,
-      repeat: Infinity,
-      ease: easeInOut,
-    },
-  };
-
-  // Rotation animation for the orbital ring
-  const rotateAnimation = {
-    rotate: 360,
-    transition: {
-      duration: 20,
-      repeat: Infinity,
-      ease: 'linear',
-    },
-  };
-
-  // Glowing effect animation
-  const glowAnimation = {
-    opacity: [0.5, 0.8, 0.5],
-    scale: [1, 1.05, 1],
-    transition: {
-      duration: 3,
-      repeat: Infinity,
-      ease: easeInOut,
-    },
-  };
-
-  // Badge pulse animation
-  const badgePulse = {
-    scale: [1, 1.05, 1],
-    opacity: [0.9, 1, 0.9],
-    transition: {
-      duration: 2,
-      repeat: Infinity,
-      ease: 'easeInOut',
-    },
-  };
-
   return (
-    <section className="relative flex min-h-screen w-full flex-col items-center overflow-hidden bg-gradient-to-br from-white via-blue-400 to-indigo-600 px-6 py-16 text-gray-900 sm:px-8 lg:px-12">
-      {/* Modern Background Effects */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/95 via-indigo-500/90 to-purple-700/95"></div>
-      
-      {/* Subtle geometric pattern */}
-      <div className="absolute inset-0 opacity-[0.02]">
-        <div className="h-full w-full bg-[linear-gradient(30deg,#ffffff_12%,transparent_12.5%,transparent_87%,#ffffff_87.5%,#ffffff),linear-gradient(150deg,#ffffff_12%,transparent_12.5%,transparent_87%,#ffffff_87.5%,#ffffff),linear-gradient(30deg,#ffffff_12%,transparent_12.5%,transparent_87%,#ffffff_87.5%,#ffffff),linear-gradient(150deg,#ffffff_12%,transparent_12.5%,transparent_87%,#ffffff_87.5%,#ffffff)] bg-[length:60px_60px] bg-[position:0_0,0_0,30px_30px,30px_30px]"></div>
+    <section className="relative flex min-h-[100dvh] w-full flex-col items-center justify-center overflow-hidden bg-zinc-950 px-4 sm:px-6 lg:px-8 pt-24 pb-16">
+      {/* Dark Cyber Background Elements */}
+      <div className="absolute inset-0 z-0 flex items-center justify-center">
+        <div className="absolute top-1/4 left-1/4 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500/10 blur-[120px]" />
+        <div className="absolute bottom-1/4 right-1/4 h-[400px] w-[400px] translate-x-1/2 translate-y-1/2 rounded-full bg-cyan-500/10 blur-[100px]" />
+        <div className="absolute top-1/2 left-1/2 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-500/5 blur-[150px]" />
       </div>
 
-      {/* Modern floating elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        {/* Gradient orbs */}
-        <motion.div
-          animate={{ 
-            x: [0, 100, 0],
-            y: [0, -50, 0],
-            scale: [1, 1.2, 1],
-          }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-          className="absolute top-20 left-20 h-72 w-72 rounded-full bg-gradient-to-r from-blue-400/20 to-indigo-500/20 blur-3xl"
-        />
-        <motion.div
-          animate={{ 
-            x: [0, -80, 0],
-            y: [0, 60, 0],
-            scale: [1.2, 1, 1.2],
-          }}
-          transition={{
-            duration: 25,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 5
-          }}
-          className="absolute bottom-32 right-20 h-96 w-96 rounded-full bg-gradient-to-l from-purple-400/15 to-pink-500/15 blur-3xl"
-        />
-        
-        {/* Floating particles */}
-        {Array.from({ length: 12 }).map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute h-1 w-1 rounded-full bg-white/40"
-            style={{
-              top: `${20 + Math.random() * 60}%`,
-              left: `${10 + Math.random() * 80}%`,
-            }}
-            animate={{
-              y: [0, -30, 0],
-              opacity: [0.4, 1, 0.4],
-            }}
-            transition={{
-              duration: 4 + Math.random() * 3,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: Math.random() * 2,
-            }}
-          />
-        ))}
-      </div>
+      {/* Grid Pattern */}
+      <div className="absolute inset-0 z-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)]" />
 
-      {/* Main Content Container */}
-      <motion.div 
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="relative z-20 mx-auto w-full max-w-7xl pt-20"
-      >
-        <div className="flex min-h-[70vh] flex-col items-center gap-16 lg:flex-row lg:items-center lg:justify-between lg:gap-20">
+      {/* Main Content */}
+      <div className="relative z-10 mx-auto w-full max-w-7xl">
+        <div className="flex flex-col items-center justify-center gap-12 text-center lg:gap-16">
           
-          {/* Content Section - Left Side */}
-          <main className="flex-1 space-y-8 text-center lg:text-left">
-            
-            {/* Main Headline */}
-            <motion.div variants={itemVariants} className="space-y-4">
-              <h1 className="text-5xl font-bold leading-[1.1] tracking-tight text-white sm:text-6xl lg:text-7xl xl:text-8xl">
-                <span className="block bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent">
-                  Beacon
-                </span>
-              </h1>
-              <div className="mx-auto max-w-3xl lg:mx-0">
-                <p className="text-xl leading-relaxed text-white/90 sm:text-2xl font-light">
-                  Encrypt messages, embed invisible beacons, and monitor every access in 
-                  <span className="font-semibold text-blue-100"> real time</span>
-                </p>
-              </div>
-            </motion.div>
+          {/* Top Badge */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.15)] backdrop-blur-md"
+          >
+            <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            Beacon Security 2.0 Now Live
+          </motion.div>
 
-            {/* Action Buttons */}
-            <motion.div
-              variants={itemVariants}
-              className="flex flex-col gap-4 sm:flex-row sm:justify-center lg:justify-start"
-            >
-              <Button
-                className="group h-14 rounded-2xl border border-white/20 bg-white/10 px-8 text-lg font-medium text-white backdrop-blur-sm transition-all hover:bg-white/20 hover:scale-105"
-                size="lg"
-              >
-                Get Started
-                <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
-              </Button>
+          {/* Headline */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+            className="max-w-4xl space-y-6"
+          >
+            <h1 className="text-5xl font-extrabold tracking-tight text-white sm:text-6xl lg:text-7xl xl:text-[5rem] leading-[1.1]">
+              Secure Communication, <br className="hidden sm:block" />
+              <span className="relative inline-block mt-2">
+                <span className="absolute -inset-1 block -skew-y-2 bg-gradient-to-r from-emerald-600 to-cyan-600" aria-hidden="true"></span>
+                <span className="relative text-white">Monitored in Real-Time.</span>
+              </span>
+            </h1>
+            <p className="mx-auto max-w-2xl text-lg text-zinc-400 sm:text-xl font-light leading-relaxed">
+              Encrypt your most sensitive messages, embed invisible tracking beacons, and gain absolute visibility over every access attempt. Zero-trust security meets effortless design.
+            </p>
+          </motion.div>
 
-              <Button
-                variant="outline"
-                className="h-14 rounded-2xl border-white/30 bg-transparent px-8 text-lg font-medium text-white/90 hover:bg-white/5 hover:text-white"
-                size="lg"
-              >
-                Watch Demo
-              </Button>
-            </motion.div>
+          {/* CTA Buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
+            className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-center w-full sm:w-auto"
+          >
+            <Link href="/login" className="w-full sm:w-auto">
+              <button className="group relative flex w-full h-14 items-center justify-center gap-2 overflow-hidden rounded-full bg-emerald-500 px-8 font-semibold text-zinc-950 transition-all hover:bg-emerald-400 hover:scale-105 shadow-[0_0_40px_rgba(16,185,129,0.3)]">
+                <ShieldCheck className="h-5 w-5" />
+                <span>Start Securing Data</span>
+                <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
+              </button>
+            </Link>
 
-            {/* Stats Row */}
-            <motion.div
-              variants={itemVariants}
-              className="flex flex-wrap justify-center gap-6 lg:justify-start"
-            >
-              <div className="group rounded-2xl border border-white/20 bg-white/5 px-6 py-4 backdrop-blur-md transition-all hover:bg-white/10">
-                <p className="text-2xl font-bold text-white sm:text-3xl">
-                  {stats.secureLinks.toLocaleString()}+
-                </p>
-                <p className="text-sm text-white/70">Secure Links</p>
-              </div>
-              <div className="group rounded-2xl border border-white/20 bg-white/5 px-6 py-4 backdrop-blur-md transition-all hover:bg-white/10">
-                <p className="text-2xl font-bold text-white sm:text-3xl">
-                  {stats.autoExpiry}-Day
-                </p>
-                <p className="text-sm text-white/70">Auto-Expiry</p>
-              </div>
-              <div className="group rounded-2xl border border-white/20 bg-white/5 px-6 py-4 backdrop-blur-md transition-all hover:bg-white/10">
-                <p className="text-2xl font-bold text-white sm:text-3xl">
-                  {stats.monitoring}/7
-                </p>
-                <p className="text-sm text-white/70">AI Monitoring</p>
-              </div>
-            </motion.div>
+            <Link href="#features" className="w-full sm:w-auto">
+              <button className="flex w-full h-14 items-center justify-center rounded-full border border-zinc-700 bg-zinc-900/50 px-8 font-medium text-zinc-300 backdrop-blur-md transition-all hover:bg-zinc-800 hover:text-white">
+                Explore Features
+              </button>
+            </Link>
+          </motion.div>
 
-            {/* Social proof */}
-            <motion.div
-              variants={itemVariants}
-              className="inline-flex items-center gap-4 rounded-2xl border border-white/20 bg-white/5 px-6 py-4 backdrop-blur-md"
-            >
-              <div className="flex -space-x-2">
-                {[1, 2, 3, 4].map((i) => (
-                  <div
-                    key={i}
-                    className="h-10 w-10 overflow-hidden rounded-full border-2 border-white/50"
-                  >
-                    <div className="h-full w-full bg-gradient-to-br from-blue-300 to-indigo-400"></div>
-                  </div>
-                ))}
-              </div>
-              <div className="text-white/90">
-                <span className="font-semibold text-white">20000+</span> Users
-              </div>
-            </motion.div>
-          </main>
-
-          {/* Hero Image Section - Right Side */}
-          <div className="flex-1 flex justify-center lg:justify-end">
-            <motion.div 
-              variants={itemVariants}
-              className="relative"
-            >
-              {/* Modern Container with Glass Morphism */}
-              <div className="relative overflow-hidden rounded-3xl border border-white/20 bg-white/10 backdrop-blur-2xl shadow-2xl h-[400px] w-[400px] sm:h-[450px] sm:w-[450px] lg:h-[500px] lg:w-[500px]">
-                
-                {/* Glass effect layers */}
-                <div className="absolute inset-[1px] rounded-3xl bg-gradient-to-br from-white/20 via-white/5 to-transparent"></div>
-                
-                {/* Main image container */}
-                <div className="relative z-10 h-full w-full p-8">
-                  <motion.div
-                    className="relative h-full w-full"
-                    whileHover={{ scale: 1.02 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                  >
-                    <img
-                      src="/image.png"
-                      alt="Beacon Security Platform"
-                      className="h-full w-full object-contain drop-shadow-2xl filter transition-all duration-500"
-                    />
-                  </motion.div>
-                </div>
-                
-                {/* Animated background gradient */}
-                <motion.div
-                  className="absolute inset-0 opacity-30"
-                  animate={{
-                    background: [
-                      "radial-gradient(circle at 20% 50%, #3b82f6 0%, transparent 50%)",
-                      "radial-gradient(circle at 80% 50%, #6366f1 0%, transparent 50%)",
-                      "radial-gradient(circle at 40% 80%, #8b5cf6 0%, transparent 50%)",
-                      "radial-gradient(circle at 20% 50%, #3b82f6 0%, transparent 50%)",
-                    ],
-                  }}
-                  transition={{
-                    duration: 8,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                />
-              </div>
-              
-              {/* Floating elements around the container */}
-              <motion.div
-                className="absolute -top-4 -right-4 h-8 w-8 rounded-full bg-gradient-to-r from-blue-400 to-indigo-500 shadow-lg"
-                animate={{
-                  y: [0, -10, 0],
-                  rotate: [0, 180, 360],
-                }}
-                transition={{
-                  duration: 6,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-              />
-              <motion.div
-                className="absolute -bottom-6 -left-6 h-6 w-6 rounded-full bg-gradient-to-r from-purple-400 to-pink-500 shadow-lg"
-                animate={{
-                  y: [0, 10, 0],
-                  x: [0, 5, 0],
-                }}
-                transition={{
-                  duration: 4,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: 1,
-                }}
-              />
-            </motion.div>
-          </div>
+          {/* Stats Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
+            className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3 max-w-4xl mx-auto w-full"
+          >
+            <StatCard 
+              icon={<LockKeyhole className="h-6 w-6 text-emerald-400" />}
+              value={`${stats.secureLinks.toLocaleString()}+`}
+              label="Secured Links"
+            />
+            <StatCard 
+              icon={<Activity className="h-6 w-6 text-cyan-400" />}
+              value={`${stats.monitoring}/7`}
+              label="Active Monitoring"
+            />
+            <StatCard 
+              icon={<ShieldCheck className="h-6 w-6 text-indigo-400" />}
+              value={`${stats.autoExpiry} Days`}
+              label="Auto-Destruct"
+            />
+          </motion.div>
         </div>
-      </motion.div>
-      
-      {/* Bottom decorative gradient */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black/10 to-transparent"></div>
+      </div>
+
+      {/* Decorative Bottom Gradient */}
+      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-transparent z-10 pointer-events-none" />
     </section>
   );
 }
 
-
-
+function StatCard({ icon, value, label }: { icon: React.ReactNode, value: string, label: string }) {
+  return (
+    <div className="group relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6 backdrop-blur-sm transition-all hover:border-zinc-700 hover:bg-zinc-800/50 flex flex-col items-center justify-center text-center">
+      <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-zinc-950 border border-zinc-800 shadow-inner group-hover:scale-110 transition-transform duration-300">
+        {icon}
+      </div>
+      <h3 className="text-3xl font-bold text-white tracking-tight">{value}</h3>
+      <p className="mt-1 text-sm text-zinc-400 font-medium">{label}</p>
+    </div>
+  );
+}
