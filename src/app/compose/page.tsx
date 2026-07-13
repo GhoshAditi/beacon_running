@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Bold, Italic, Underline, Paperclip, X, Sparkles, Send, ChevronDown, Check, Mail } from "lucide-react";
+import { ArrowLeft, Bold, Italic, Underline, Paperclip, X, Sparkles, Send, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,6 @@ import { composeAndSendEmail } from "@/ai/flows/compose-email-flow";
 import { useAuth } from "@/context/auth-context";
 import AppHeader from "@/components/app-header";
 import { data, type User } from "@/lib/data";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import AdminSidebar from "@/components/admin-sidebar"; // Assuming we want sidebar here if it's an app page
 
 
@@ -32,9 +31,6 @@ export default function ComposePage() {
   const [attachment, setAttachment] = useState<File | null>(null);
   const [linkExpires, setLinkExpires] = useState(true);
   const [users, setUsers] = useState<User[]>([]);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  const [userSearchQuery, setUserSearchQuery] = useState("");
   const bodyRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -49,19 +45,6 @@ export default function ComposePage() {
     };
     loadUsers();
   }, []);
-
-  const filteredUsers = users.filter(u => 
-    u.id !== user?.id && // Don't show current user
-    (u.name.toLowerCase().includes(userSearchQuery.toLowerCase()) || 
-     u.email.toLowerCase().includes(userSearchQuery.toLowerCase()))
-  );
-
-  const handleUserSelect = (selectedUser: User) => {
-    setSelectedUser(selectedUser);
-    setRecipient(selectedUser.email);
-    setUserDropdownOpen(false);
-    setUserSearchQuery("");
-  };
 
   const handleBodyChange = () => {
     if (bodyRef.current) {
@@ -129,14 +112,6 @@ export default function ComposePage() {
         return;
     }
 
-    if (!selectedUser) {
-      toast({
-        variant: "destructive",
-        title: "Invalid Recipient",
-        description: "Please select a user from the database.",
-      });
-      return;
-    }
 
     setIsLoading(true);
     let attachmentDataUri: string | undefined = undefined;
@@ -238,67 +213,22 @@ export default function ComposePage() {
 
                             <div className="grid grid-cols-[80px_1fr] items-center gap-4">
                                 <Label htmlFor="recipient" className="text-right text-zinc-400 font-medium">To</Label>
-                                <Popover open={userDropdownOpen} onOpenChange={setUserDropdownOpen}>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                    variant="outline"
-                                    role="combobox"
-                                    aria-expanded={userDropdownOpen}
-                                    className="w-full justify-between bg-zinc-950/50 border border-zinc-800 hover:bg-zinc-800 hover:text-white transition-colors h-11"
-                                    >
-                                    {selectedUser ? (
-                                        <span className="flex items-center gap-2 text-white">
-                                        <span>{selectedUser.name}</span>
-                                        <span className="text-zinc-500 text-sm">({selectedUser.email})</span>
-                                        </span>
-                                    ) : (
-                                        <span className="text-zinc-500">Select a secure recipient...</span>
-                                    )}
-                                    <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 bg-zinc-900 border-zinc-800 shadow-2xl">
-                                    <div className="p-2">
-                                    <Input
-                                        placeholder="Search users..."
-                                        value={userSearchQuery}
-                                        onChange={(e) => setUserSearchQuery(e.target.value)}
-                                        className="mb-2 bg-zinc-950 border-zinc-800 text-white focus-visible:ring-emerald-500"
-                                    />
-                                    <div className="max-h-60 overflow-y-auto">
-                                        {filteredUsers.length === 0 ? (
-                                        <div className="p-4 text-sm text-zinc-500 text-center">
-                                            No users found
-                                        </div>
-                                        ) : (
-                                        filteredUsers.map((u) => (
-                                            <Button
-                                            key={u.id}
-                                            variant="ghost"
-                                            className="w-full justify-start p-3 h-auto hover:bg-zinc-800 hover:text-white"
-                                            onClick={() => handleUserSelect(u)}
-                                            >
-                                            <div className="flex flex-col items-start gap-1 w-full">
-                                                <div className="flex items-center justify-between w-full">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="font-medium text-white">{u.name}</span>
-                                                        <span className="text-[10px] uppercase tracking-wider font-bold bg-zinc-800 text-zinc-400 px-1.5 py-0.5 rounded">
-                                                            {u.role.replace('_', ' ')}
-                                                        </span>
-                                                    </div>
-                                                    {selectedUser?.id === u.id && (
-                                                        <Check className="h-4 w-4 text-emerald-500" />
-                                                    )}
-                                                </div>
-                                                <span className="text-sm text-zinc-500">{u.email}</span>
-                                            </div>
-                                            </Button>
-                                        ))
-                                        )}
-                                    </div>
-                                    </div>
-                                </PopoverContent>
-                                </Popover>
+                <Input
+                  id="recipient"
+                  name="recipient"
+                  type="email"
+                  required
+                  list="known-recipients"
+                  placeholder="recipient@example.com"
+                  value={recipient}
+                  onChange={(e) => setRecipient(e.target.value)}
+                  className="bg-zinc-950/50 border border-zinc-800 text-white placeholder:text-zinc-600 focus-visible:ring-emerald-500 h-11"
+                />
+                <datalist id="known-recipients">
+                  {users.filter(u => u.id !== user?.id).map(u => (
+                    <option key={u.id} value={u.email} />
+                  ))}
+                </datalist>
                             </div>
                             
                             <div className="grid grid-cols-[80px_1fr] items-center gap-4">

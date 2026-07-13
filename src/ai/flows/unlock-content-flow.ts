@@ -7,13 +7,35 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { data } from '@/lib/data';
+import { getAdminDb } from '@/lib/firebase-admin';
 import { VerifyPinInputSchema, VerifyPinOutputSchema, type VerifyPinInput, type VerifyPinOutput } from '@/ai/types/unlock-content-types';
 import bcrypt from 'bcryptjs';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp as AdminTimestamp } from 'firebase-admin/firestore';
 import { generateIncidentReport } from './incident-report-flow';
 
 const FAILED_ATTEMPTS_THRESHOLD = 3;
+const db = getAdminDb();
+const emailsCollection = db.collection('emails');
+const usersCollection = db.collection('users');
+const accessLogsCollection = db.collection('accessLogs');
+const alertsCollection = db.collection('alerts');
+
+type EmailRecord = {
+  id: string;
+  recipient: string;
+  companyId: string;
+  subject: string;
+  body: string;
+  revoked?: boolean;
+  expiresAt?: AdminTimestamp | null;
+  attachmentFilename?: string;
+  attachmentDataUri?: string;
+  secureLinkToken: string;
+};
+
+type RecipientRecord = {
+  pinHash?: string;
+};
 
 export async function verifyPinAndGetContent(input: VerifyPinInput): Promise<VerifyPinOutput> {
   return verifyPinFlow(input);
@@ -26,7 +48,10 @@ const verifyPinFlow = ai.defineFlow(
     outputSchema: VerifyPinOutputSchema,
   },
   async ({ token, pin }) => {
-    const email = await data.emails.findByToken(token);
+    const emailSnapshot = await emailsCollection.where('secureLinkToken', '==', token).limit(1).get();
+    const email = emailSnapshot.empty
+      ? undefined
+      : ({ id: emailSnapshot.docs[0].id, ...(emailSnapshot.docs[0].data() as Omit<EmailRecord, 'id'>) } as EmailRecord);
 
     if (!email) {
       return { success: false, error: 'Invalid or expired link.' };
@@ -36,45 +61,20 @@ const verifyPinFlow = ai.defineFlow(
         return { success: false, error: 'This secure link has been disabled due to suspicious activity (multiple device/location opens). Please contact your administrator.' };
     }
 
-    if (email.expiresAt && (email.expiresAt as Timestamp).toDate() < new Date()) {
+    if (email.expiresAt && email.expiresAt.toDate() < new Date()) {
       return { success: false, error: 'This secure link has expired.' };
     }
 
-    // Guest access bypass
-    if (email.isGuest) {
-      if (pin === 'GUEST_ACCESS') {
-         return {
-            success: true,
-            document: {
-              title: `Confidential Document: ${email.subject}`,
-              description: email.body,
-              imageUrl: 'https://placehold.co/800x600.png',
-              imageHint: 'confidential document',
-              attachmentFilename: email.attachmentFilename,
-              attachmentDataUri: email.attachmentDataUri,
-            },
-          };
-      } else {
-        return { success: false, error: 'Invalid guest access attempt.'}
-      }
-    }
-
-    // Check if recipient is in the database
-    const recipient = await data.users.findByEmail(email.recipient);
+    const recipientSnapshot = await usersCollection.where('email', '==', email.recipient).limit(1).get();
+    const recipient = recipientSnapshot.empty
+      ? undefined
+      : (recipientSnapshot.docs[0].data() as RecipientRecord);
     
     if (!recipient) {
-        // Recipient not in database - treat as guest access (no PIN required)
         return {
-            success: true,
-            document: {
-              title: `Confidential Document: ${email.subject}`,
-              description: email.body,
-              imageUrl: 'https://placehold.co/800x600.png',
-              imageHint: 'confidential document',
-              attachmentFilename: email.attachmentFilename,
-              attachmentDataUri: email.attachmentDataUri,
-            },
-          };
+          success: false,
+          error: 'This recipient does not have a security PIN configured. Ask the sender or administrator to set one up first.',
+        };
     }
     
     if (!recipient.pinHash) {
@@ -97,9 +97,10 @@ const verifyPinFlow = ai.defineFlow(
     const isPinValid = await bcrypt.compare(pin, recipient.pinHash);
 
     if (isPinValid) {
-      await data.accessLogs.create({
+      await accessLogsCollection.add({
         ...logDetails,
         status: 'Success',
+        timestamp: AdminTimestamp.now(),
       });
       return {
         success: true,
@@ -113,29 +114,35 @@ const verifyPinFlow = ai.defineFlow(
         },
       };
     } else {
-        await data.accessLogs.create({
+        await accessLogsCollection.add({
             ...logDetails,
             status: 'Failed',
+          timestamp: AdminTimestamp.now(),
         });
         
-        const failedAttempts = await data.accessLogs.countFailedAttempts(email.id);
+        const failedAttemptsSnapshot = await accessLogsCollection.where('emailId', '==', email.id).where('status', '==', 'Failed').get();
+        const failedAttempts = failedAttemptsSnapshot.size;
 
         if (failedAttempts >= FAILED_ATTEMPTS_THRESHOLD) {
-            const alertExists = await data.alerts.checkExisting(email.id, 'Multiple Failed PINs');
+          const alertExistsSnapshot = await alertsCollection.where('emailId', '==', email.id).where('type', '==', 'Multiple Failed PINs').where('resolved', '==', false).limit(1).get();
+          const alertExists = !alertExistsSnapshot.empty;
             if (!alertExists) {
-                const recentLogs = await data.accessLogs.getLogsForEmail(email.id, 10);
+            const recentLogsSnapshot = await accessLogsCollection.where('emailId', '==', email.id).orderBy('timestamp', 'desc').limit(10).get();
+            const recentLogs = recentLogsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
                 const reportResult = await generateIncidentReport({
                     eventType: 'Multiple Failed PINs',
                     recipientEmail: email.recipient,
                     logs: JSON.stringify(recentLogs, null, 2),
                 });
                 
-                await data.alerts.create({
+            await alertsCollection.add({
                     companyId: email.companyId,
                     emailId: email.id,
                     recipientEmail: email.recipient,
                     type: 'Multiple Failed PINs',
                     message: `Multiple failed PIN attempts detected for a secure link sent to ${email.recipient}.`,
+              resolved: false,
+              timestamp: AdminTimestamp.now(),
                     incidentReport: reportResult.report,
                 });
             }

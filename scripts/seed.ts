@@ -2,6 +2,7 @@
 import { initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
+import bcrypt from 'bcryptjs';
 import { config } from 'dotenv';
 
 // Load environment variables from .env file
@@ -76,6 +77,8 @@ const seedData = async () => {
         { uid: 'user-ca-02', email: 'bruce@wayne.com', password: 'password123', name: 'Bruce Wayne', role: 'company_admin', companyId: '2', avatarUrl: '/logo.png' },
         { uid: 'user-emp-02', email: 'lucius@wayne.com', password: 'password123', name: 'Lucius Fox', role: 'employee', companyId: '2', avatarUrl: '/logo.png' },
     ];
+
+    const defaultPinHash = await bcrypt.hash('000000', 10);
     
     for (const userData of users) {
         const { uid, email, password, ...firestoreData } = userData;
@@ -89,7 +92,11 @@ const seedData = async () => {
                 throw error;
             }
         }
-        await db.collection('users').doc(uid).set(firestoreData);
+        await db.collection('users').doc(uid).set({
+            ...firestoreData,
+            pinHash: defaultPinHash,
+            pinSet: true,
+        });
     }
     console.log("Users seeded.");
 

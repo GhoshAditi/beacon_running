@@ -98,6 +98,28 @@ const beaconLogsCollection = collection(db, 'beaconLogs');
 const alertsCollection = collection(db, 'alerts');
 const pinResetRequestsCollection = collection(db, 'pinResetRequests');
 
+async function updateRevokedStatus(emailId: string, revoked: boolean): Promise<void> {
+  const currentUser = firebaseAuth.currentUser;
+  if (!currentUser) {
+    throw new Error('You must be signed in to change email access.');
+  }
+
+  const idToken = await currentUser.getIdToken();
+  const response = await fetch(`/api/emails/${emailId}/revoke`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${idToken}`,
+    },
+    body: JSON.stringify({ revoked }),
+  });
+
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || !result.success) {
+    throw new Error(result.error || 'Failed to update revoked status.');
+  }
+}
+
 
 export const data = {
   users: {
@@ -400,12 +422,10 @@ export const data = {
       return snapshot.docs.map((d) => d.id);
     },
     revoke: async (emailId: string): Promise<void> => {
-      const emailRef = doc(db, 'emails', emailId);
-      await updateDoc(emailRef, { revoked: true });
+      await updateRevokedStatus(emailId, true);
     },
     unrevoke: async (emailId: string): Promise<void> => {
-      const emailRef = doc(db, 'emails', emailId);
-      await updateDoc(emailRef, { revoked: false });
+      await updateRevokedStatus(emailId, false);
     }
   },
   accessLogs: {

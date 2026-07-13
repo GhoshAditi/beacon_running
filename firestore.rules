@@ -1,53 +1,67 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-  
+
     function isSignedIn() {
       return request.auth != null;
     }
-  
+
+    function isAdmin() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function myCompanyId() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId;
+    }
+
     // USERS
-    // Users can read their own document.
-    // Users can only be created by the seed script (or admin).
-    // Admin can read/write any user document.
     match /users/{userId} {
-      allow read: if isSignedIn() && (request.auth.uid == userId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
-      allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow write: if isAdmin();
       allow create: if !isSignedIn(); // Allow seed script
     }
-    
+
     // COMPANIES
-    // Any signed-in user can read company data.
-    // Only admin can write company data.
     match /companies/{companyId} {
       allow read: if isSignedIn();
-      allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow write: if isAdmin();
     }
-    
+
     // EMAILS
-    // Users can create emails if they belong to the company.
-    // Users can only read emails associated with their company.
+    // FIX: added isAdmin() bypass so the admin dashboard can read across all companies.
     match /emails/{emailId} {
-      allow create: if isSignedIn() && request.resource.data.companyId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId;
-      allow read: if isSignedIn() && resource.data.companyId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId;
-      // No one can update or delete emails directly for logging purposes.
+      allow create: if isSignedIn() && (request.resource.data.companyId == myCompanyId() || isAdmin());
+      allow read: if isSignedIn() && (resource.data.companyId == myCompanyId() || isAdmin());
+      allow update, delete: if false; // Logs/emails are immutable once created.
+    }
+
+    // ACCESS & BEACON LOGS
+    match /{collection}/{logId} {
+      allow create: if true; // Secure link page is unauthenticated.
+      allow read: if isSignedIn() &&
+                    (resource.data.companyId == myCompanyId() || isAdmin()) &&
+                    (collection == 'accessLogs' || collection == 'beaconLogs');
       allow update, delete: if false;
     }
-    
-    // ACCESS & BEACON LOGS
-    // Anyone can create logs (secure link page is not authenticated).
-    // Only users belonging to the company can read logs.
-    match /{collection}/{logId} {
-      allow create: if true;
-      allow read: if isSignedIn() && (
-                      resource.data.companyId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId ||
-                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
-                    )
-                    && (collection == 'accessLogs' || collection == 'beaconLogs');
-      // Logs are immutable.
-      allow update, delete: if false;
+
+    // ALERTS
+    // FIX: previously only covered by the generic block above, which excluded 'alerts'.
+    match /alerts/{alertId} {
+      allow create: if true; // Created by server-side flows (admin SDK bypasses rules anyway).
+      allow read: if isSignedIn() && (resource.data.companyId == myCompanyId() || isAdmin());
+      allow update: if isSignedIn() && (resource.data.companyId == myCompanyId() || isAdmin());
+      allow delete: if false;
+    }
+
+    // PIN RESET REQUESTS
+    // FIX: previously had no rule at all — always denied.
+    match /pinResetRequests/{requestId} {
+      allow create: if isSignedIn();
+      allow read: if isSignedIn() && (resource.data.companyId == myCompanyId() || isAdmin());
+      allow update: if isSignedIn() && (resource.data.companyId == myCompanyId() || isAdmin());
+      allow delete: if false;
     }
   }
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { LockKeyhole, ShieldCheck, ShieldX, Paperclip, Download, Hourglass, MapPin, ShieldAlert } from "lucide-react";
+import { LockKeyhole, ShieldCheck, ShieldX, Paperclip, Download, ShieldAlert } from "lucide-react";
 import GuardianMailLogo from "@/components/icons/logo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,37 +11,8 @@ import { Label } from "@/components/ui/label";
 import Image from "next/image";
 import { verifyPinAndGetContent } from "@/ai/flows/unlock-content-flow";
 import type { VerifyPinOutput } from "@/ai/types/unlock-content-types";
-import { Skeleton } from "@/components/ui/skeleton";
 import { data, type Email } from "@/lib/data";
 import { Timestamp } from "firebase/firestore";
-
-function getLocationWithPermission(): Promise<GeolocationPosition> {
-  return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
-      reject(new Error("Geolocation is not supported by this browser."));
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (position) => resolve(position),
-      (error) => {
-        let errorMessage = "Location access denied.";
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage = "Location access denied by user.";
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMessage = "Location information is unavailable.";
-            break;
-          case error.TIMEOUT:
-            errorMessage = "Location request timed out.";
-            break;
-        }
-        reject(new Error(errorMessage));
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 600000 }
-    );
-  });
-}
 
 function UnlockedContentDisplay({ document }: { document: NonNullable<VerifyPinOutput['document']> }) {
   return (
@@ -101,10 +72,6 @@ export default function SecureLinkPage() {
   const [unlockedContent, setUnlockedContent] = useState<VerifyPinOutput['document'] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [emailMeta, setEmailMeta] = useState<Email | null>(null);
-  const [requiresPin, setRequiresPin] = useState<boolean>(true);
-  const [locationPermissionGranted, setLocationPermissionGranted] = useState<boolean>(false);
-  const [isRequestingLocation, setIsRequestingLocation] = useState<boolean>(false);
-  const [userLocation, setUserLocation] = useState<GeolocationPosition | null>(null);
   const params = useParams();
   const token = params.token as string;
 
@@ -134,39 +101,6 @@ export default function SecureLinkPage() {
         }
 
         setEmailMeta(email);
-
-        if (email.isGuest) {
-          // For guests, bypass PIN and unlock content directly
-          const result = await verifyPinAndGetContent({ token, pin: "GUEST_ACCESS" });
-          if (result.success) {
-            setUnlockedContent(result.document ?? null);
-          } else {
-            setError(result.error || "Could not retrieve guest content.");
-          }
-        } else {
-          // Check if recipient is in the database to determine if PIN is required
-          const allUsers = await data.users.list();
-          const recipientInDb = allUsers.find(user => user.email === email.recipient);
-
-          if (!recipientInDb) {
-            // Recipient not in database - require location but no PIN
-            setRequiresPin(false);
-            if (locationPermissionGranted) {
-              const result = await verifyPinAndGetContent({ token, pin: "" });
-              if (result.success) {
-                setUnlockedContent(result.document ?? null);
-              } else {
-                setError(result.error || "Could not retrieve content.");
-              }
-            }
-          } else if (!recipientInDb.pinHash) {
-            // Recipient exists but hasn't set PIN
-            setError("You need to set up your PIN before accessing secure content. Please contact your administrator.");
-          } else {
-            // Recipient exists and has PIN - require PIN verification and location
-            setRequiresPin(true);
-          }
-        }
       } catch (err) {
         setError("An unexpected error occurred while verifying the link.");
       } finally {
@@ -174,24 +108,7 @@ export default function SecureLinkPage() {
       }
     }
     checkToken();
-  }, [token, locationPermissionGranted, userLocation]);
-
-  // Request location permission
-  const requestLocationPermission = async () => {
-    setIsRequestingLocation(true);
-    setError("");
-
-    try {
-      const position = await getLocationWithPermission();
-      setUserLocation(position);
-      setLocationPermissionGranted(true);
-      setError("");
-    } catch (error: any) {
-      setError(error.message || "Location access is required to view secure content.");
-    } finally {
-      setIsRequestingLocation(false);
-    }
-  };
+  }, [token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -245,43 +162,7 @@ export default function SecureLinkPage() {
       return <UnlockedContentDisplay document={unlockedContent} />;
     }
 
-    // Show location permission request if not granted and not guest
-    if (emailMeta && !emailMeta.isGuest && !locationPermissionGranted) {
-      return (
-        <Card className="w-full max-w-sm bg-zinc-900/80 backdrop-blur-xl border-zinc-800 shadow-2xl relative z-10 overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 to-amber-500"></div>
-          <CardHeader className="text-center pt-8">
-            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-500/10 border border-orange-500/20 shadow-[0_0_20px_rgba(249,115,22,0.2)]">
-              <MapPin className="h-8 w-8 text-orange-500" />
-            </div>
-            <CardTitle className="text-2xl text-white font-bold tracking-tight">Location Required</CardTitle>
-            <CardDescription className="text-zinc-400 mt-2">
-              For security purposes, this secure document requires location access to verify your identity before viewing.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6 px-6">
-            {error && (
-              <div className="flex items-center gap-2 text-sm text-red-400 bg-red-500/10 p-3 rounded-lg border border-red-500/20">
-                <ShieldX className="h-4 w-4 shrink-0" />
-                <p>{error}</p>
-              </div>
-            )}
-            <Button
-              onClick={requestLocationPermission}
-              className="w-full bg-orange-500 text-zinc-950 hover:bg-orange-400 font-semibold shadow-[0_0_15px_rgba(249,115,22,0.3)] transition-all h-12 text-md"
-              disabled={isRequestingLocation}
-            >
-              {isRequestingLocation ? 'Requesting...' : 'Grant Access'}
-            </Button>
-          </CardContent>
-          <CardFooter className="text-center text-xs text-zinc-500 pb-6 px-6 border-t border-zinc-800/50 pt-4 mt-4 bg-zinc-950/30">
-            <p>Your location is requested only for this verification step.</p>
-          </CardFooter>
-        </Card>
-      );
-    }
-
-    if (emailMeta && !emailMeta.isGuest && requiresPin) {
+    if (emailMeta) {
       return (
         <Card className="w-full max-w-sm bg-zinc-900/80 backdrop-blur-xl border-zinc-800 shadow-2xl relative z-10 overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 to-blue-500"></div>
@@ -324,21 +205,6 @@ export default function SecureLinkPage() {
               <p>This link is secure. Do not share.</p>
             </div>
           </CardFooter>
-        </Card>
-      );
-    }
-
-    if (emailMeta && !emailMeta.isGuest && !requiresPin) {
-      return (
-        <Card className="w-full max-w-sm bg-zinc-900/80 backdrop-blur-xl border-zinc-800 shadow-2xl relative z-10 overflow-hidden text-center">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-green-500"></div>
-          <CardHeader className="pt-8">
-            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-500/10 border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
-              <ShieldCheck className="h-8 w-8 text-emerald-400" />
-            </div>
-            <CardTitle className="text-2xl text-white font-bold">Decrypting Content</CardTitle>
-            <CardDescription className="text-zinc-400 mt-2">Please wait while we establish a secure connection...</CardDescription>
-          </CardHeader>
         </Card>
       );
     }

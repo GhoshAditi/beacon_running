@@ -8,7 +8,6 @@
 
 import { ai } from '@/ai/genkit';
 import { randomBytes } from 'crypto';
-import { data } from '@/lib/data';
 import {
   ComposeEmailInputSchema,
   ComposeEmailOutputSchema,
@@ -17,9 +16,12 @@ import {
 } from '@/ai/types/compose-email-types';
 import nodemailer from 'nodemailer';
 import { config } from 'dotenv';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp as AdminTimestamp } from 'firebase-admin/firestore';
+import { getAdminDb } from '@/lib/firebase-admin';
 
 config(); // Load environment variables
+
+const db = getAdminDb();
 
 // ------------------- Flow -------------------
 const composeEmailFlow = ai.defineFlow({
@@ -32,6 +34,8 @@ const composeEmailFlow = ai.defineFlow({
       const isSystemEmail = input.senderId === 'SYSTEM';
       const token = randomBytes(16).toString('hex');
       const now = new Date();
+      const usersCollection = db.collection('users');
+      const emailsCollection = db.collection('emails');
 
       if (input.isGuest) {
         // ---------- Guest Workflow ----------
@@ -43,13 +47,18 @@ const composeEmailFlow = ai.defineFlow({
           secureLinkToken: token,
           companyId: input.companyId,
           senderId: input.senderId,
-          expiresAt: Timestamp.fromDate(guestExpiresAt),
+          expiresAt: AdminTimestamp.fromDate(guestExpiresAt),
           isGuest: true,
           ...(input.attachmentDataUri && { attachmentDataUri: input.attachmentDataUri }),
           ...(input.attachmentFilename && { attachmentFilename: input.attachmentFilename }),
         };
 
-        const email = await data.emails.create(emailData);
+        const emailRef = await emailsCollection.add({
+          ...emailData,
+          createdAt: AdminTimestamp.now(),
+          revoked: false,
+        });
+        const email = { id: emailRef.id, ...emailData };
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9002';
         const secureLink = `${baseUrl}/secure/${token}`;
         const beaconUrl = `${baseUrl}/api/beacon?emailId=${email.id}&recipientEmail=${encodeURIComponent(
@@ -68,8 +77,8 @@ const composeEmailFlow = ai.defineFlow({
         // Get sender email for subject
         let senderEmail = '';
         if (input.senderId && input.senderId !== 'SYSTEM') {
-          const sender = await data.users.findById(input.senderId);
-          senderEmail = sender?.email || '';
+          const senderDoc = await usersCollection.doc(input.senderId).get();
+          senderEmail = senderDoc.exists ? senderDoc.data()?.email || '' : '';
         }
         const subjectWithSender = `[Secure] ${input.subject}` + (senderEmail ? ` [from: ${senderEmail}]` : '');
         await sendEmail(
@@ -89,7 +98,8 @@ const composeEmailFlow = ai.defineFlow({
 
       if (!isSystemEmail) {
         // ---------- Regular Employee Workflow ----------
-        const sender = await data.users.findById(input.senderId);
+        const senderDoc = await usersCollection.doc(input.senderId).get();
+        const sender = senderDoc.exists ? ({ id: senderDoc.id, ...senderDoc.data() } as { id: string; name: string; email: string; pinSet?: boolean }) : undefined;
         if (!sender || !sender.pinSet) {
           return {
             success: false,
@@ -105,14 +115,19 @@ const composeEmailFlow = ai.defineFlow({
           companyId: input.companyId,
           senderId: input.senderId,
           expiresAt: input.linkExpires
-            ? Timestamp.fromDate(new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000))
+            ? AdminTimestamp.fromDate(new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000))
             : null,
           isGuest: false,
           ...(input.attachmentDataUri && { attachmentDataUri: input.attachmentDataUri }),
           ...(input.attachmentFilename && { attachmentFilename: input.attachmentFilename }),
         };
 
-        const email = await data.emails.create(emailData);
+        const emailRef = await emailsCollection.add({
+          ...emailData,
+          createdAt: AdminTimestamp.now(),
+          revoked: false,
+        });
+        const email = { id: emailRef.id, ...emailData };
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9002';
         const secureLink = `${baseUrl}/secure/${token}`;
         const beaconUrl = `${baseUrl}/api/beacon?emailId=${email.id}&recipientEmail=${encodeURIComponent(
@@ -150,8 +165,8 @@ const composeEmailFlow = ai.defineFlow({
       // Try to get sender email if senderId is provided
       let senderEmail = '';
       if (input.senderId && input.senderId !== 'SYSTEM') {
-        const sender = await data.users.findById(input.senderId);
-        senderEmail = sender?.email || '';
+        const senderDoc = await usersCollection.doc(input.senderId).get();
+        senderEmail = senderDoc.exists ? senderDoc.data()?.email || '' : '';
       }
       const subjectWithSender = input.subject + (senderEmail ? ` [from: ${senderEmail}]` : '');
       await sendEmail(input.recipient, subjectWithSender, input.body);
@@ -192,14 +207,6 @@ async function sendEmail(
     to,
     subject,
     html,
-    attachments: attachmentDataUri
-      ? [
-          {
-            filename: attachmentFilename || 'attachment',
-            path: attachmentDataUri,
-          },
-        ]
-      : [],
   };
 
   await transporter.sendMail(mailOptions);
